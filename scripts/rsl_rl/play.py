@@ -20,10 +20,18 @@ parser = argparse.ArgumentParser(description="Train an RL agent with RSL-RL.")
 parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument(
+    "--video_camera",
+    type=str,
+    choices=("world", "follow", "grid"),
+    default="world",
+    help="Camera mode used for video recording.",
+)
+parser.add_argument(
     "--disable_fabric", action="store_true", default=False, help="Disable fabric and use USD I/O operations."
 )
 parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
+parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment.")
 parser.add_argument(
     "--use_pretrained_checkpoint",
     action="store_true",
@@ -56,7 +64,7 @@ import isaaclab_tasks  # noqa: F401
 from isaaclab.envs import DirectMARLEnv, multi_agent_to_single_agent
 from isaaclab.utils.assets import retrieve_file_path
 from isaaclab.utils.dict import print_dict
-from isaaclab.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
+from isaaclab_rl.utils.pretrained_checkpoint import get_published_pretrained_checkpoint
 from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlVecEnvWrapper, export_policy_as_jit, export_policy_as_onnx
 from isaaclab_tasks.utils import get_checkpoint_path
 
@@ -75,6 +83,25 @@ def main():
         entry_point_key="play_env_cfg_entry_point",
     )
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(args_cli.task, args_cli)
+    env_cfg.seed = agent_cfg.seed if args_cli.seed is None else args_cli.seed
+    # Keep recorded videos centered on the robot without changing interactive GUI defaults.
+    if args_cli.video and args_cli.video_camera == "follow":
+        env_cfg.viewer.origin_type = "asset_root"
+        env_cfg.viewer.asset_name = "robot"
+        env_cfg.viewer.env_index = 0
+        env_cfg.viewer.eye = (3.0, 3.0, 2.0)
+        env_cfg.viewer.lookat = (0.0, 0.0, 0.4)
+    # Arrange multi-environment videos on a separated grid to avoid overlapping clones.
+    if args_cli.video and args_cli.video_camera == "grid":
+        env_cfg.scene.env_spacing = 3.0
+        env_cfg.scene.terrain.use_terrain_origins = False
+        # Grid layout does not use terrain origins, so terrain-level curriculum is unavailable.
+        env_cfg.curriculum.terrain_levels = None
+        env_cfg.scene.terrain.terrain_generator.curriculum = False
+        env_cfg.scene.terrain.env_spacing = 3.0
+        env_cfg.viewer.origin_type = "world"
+        env_cfg.viewer.eye = (10.0, 10.0, 10.0)
+        env_cfg.viewer.lookat = (0.0, 0.0, 0.0)
 
     # specify directory for logging experiments
     log_root_path = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)
