@@ -1,0 +1,4 @@
+checkpoint,evaluation_seeds,episodes,reward_mean,reward_std,xy_error_mean_mps,xy_error_std_mps,xy_rmse_mean_mps,xy_rmse_std_mps,yaw_error_mean_radps,yaw_error_std_radps,action_delta_l2_mean,action_delta_l2_std,mechanical_power_proxy_mean_w,mechanical_power_proxy_std_w,timeout_rate,base_contact_rate,bad_orientation_rate
+model_2400,"7;42;123",384,34.464582,0.197813,0.080215,0.002806,0.126186,0.004255,0.058684,0.000101,0.734724,0.008915,47.490477,1.869272,0.997396,0.000000,0.002604
+model_2900,"7;42;123",384,34.667106,0.265094,0.081282,0.004489,0.125723,0.005926,0.056130,0.000644,0.738144,0.002400,45.547045,0.647931,0.992188,0.000000,0.007812
+model_2999,"7;42;123",384,34.686056,0.035784,0.075567,0.002091,0.120952,0.001572,0.057451,0.000749,0.752469,0.003622,46.799300,0.973455,0.994792,0.000000,0.005208

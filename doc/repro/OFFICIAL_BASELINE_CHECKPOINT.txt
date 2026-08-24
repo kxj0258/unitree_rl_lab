@@ -1,0 +1,21 @@
+Unitree Go2 velocity baseline official checkpoint
+Selected: 2026-08-25
+
+Training task: Unitree-Go2-Velocity
+Training environments: 2048
+Training seed: 42
+Training iterations: 3000
+Training transitions: 147456000
+
+Path: logs/rsl_rl/unitree_go2_velocity/2026-08-24_23-25-37_baseline_seed42_env2048_i3000/model_2999.pt
+Size: 4639669 bytes
+SHA-256: a009d982c6889c694bef83e406265749a5dbc7f1b49e9ae7acf4ab56ab340928
+
+Selection protocol: model_2400/model_2900/model_2999 evaluated with scenario seeds 7, 42, and 123; 64 environments and 2 episodes per environment per run.
+Official-checkpoint coverage: 384 episodes.
+Mean XY velocity error: 0.075567 m/s.
+Timeout rate: 0.994792 (382/384).
+Base-contact termination rate: 0.000000 (0/384).
+Bad-orientation termination rate: 0.005208 (2/384).
+
+This marks an existing checkpoint. It does not replace, copy, or modify the model file.

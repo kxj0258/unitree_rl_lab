@@ -73,3 +73,7 @@ datasets
 
 # Mimic
 *.npz
+
+# Local Go2 evaluation artifacts
+/evaluation/*
+!/evaluation/README.md
