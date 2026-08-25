@@ -22,7 +22,8 @@ def sha256_file(path: Path) -> str:
 def draw_lines(frame: np.ndarray, lines: list[str]) -> np.ndarray:
     result = frame.copy()
     overlay = result.copy()
-    cv2.rectangle(overlay, (0, 0), (result.shape[1], 116), (0, 0, 0), -1)
+    banner_height = 20 + 32 * len(lines)
+    cv2.rectangle(overlay, (0, 0), (result.shape[1], banner_height), (0, 0, 0), -1)
     cv2.addWeighted(overlay, 0.62, result, 0.38, 0.0, result)
     for index, line in enumerate(lines):
         scale = 0.78 if index == 0 else 0.58
@@ -57,7 +58,14 @@ def compose(root: Path, output: Path, title: str) -> dict:
         raise RuntimeError(f"failed to open video writer: {output}")
 
     intro = np.full((height, width, 3), 28, dtype=np.uint8)
-    intro_lines = [title, "Fixed level 5 | command vx=0.35 m/s | evaluation scenario seed=42", "Raw clips and SHA-256 metadata are preserved beside this video"]
+    command_x = items[0]["command"]["lin_vel_x"]
+    scenario_seed = items[0]["evaluation_scenario_seed"]
+    seconds_per_clip = items[0]["simulated_seconds"]
+    intro_lines = [
+        title,
+        f"Fixed level 5 | command vx={command_x:.2f} m/s | {seconds_per_clip:.0f} s/clip | evaluation scenario seed={scenario_seed}",
+        "Fixed scene camera; raw clips, time series, metadata and SHA-256 are preserved",
+    ]
     intro = draw_lines(intro, intro_lines)
     for _ in range(round(fps * 2.0)):
         writer.write(intro)
@@ -71,7 +79,8 @@ def compose(root: Path, output: Path, title: str) -> dict:
         lines = [
             f"{label} | level {item['terrain_level']}",
             f"training seed={item['training_seed']} | evaluation scenario seed={item['evaluation_scenario_seed']}",
-            f"mean XY error={item['mean_xy_velocity_error_mps']:.3f} m/s | mean yaw error={item['mean_yaw_velocity_error_radps']:.3f} rad/s",
+            f"post-warmup XY error={item['post_warmup_mean_xy_velocity_error_mps']:.3f} m/s | actual vx={item['post_warmup_mean_actual_x_velocity_mps']:.3f} m/s",
+            f"distance={item['cumulative_xy_distance_m']:.2f} m | terminations={sum(item['terminations'].values())}",
         ]
         while True:
             ok, frame = cap.read()

@@ -5,7 +5,9 @@ PROJECT_DIR="${UNITREE_RL_LAB_PATH:-/home/kxj/rl_ws/unitree_rl_lab}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-${PROJECT_DIR}/evaluation/video_rough_multitraining_model2999_evalseed42_2026-08-26}"
 EVALUATION_SEED="${EVALUATION_SEED:-42}"
 TERRAIN_LEVEL="${TERRAIN_LEVEL:-5}"
-VIDEO_LENGTH="${VIDEO_LENGTH:-300}"
+VIDEO_LENGTH="${VIDEO_LENGTH:-1000}"
+WARMUP_STEPS="${WARMUP_STEPS:-100}"
+COMMAND_X="${COMMAND_X:-0.20}"
 DEVICE="${DEVICE:-cuda:0}"
 PYTHON_EXE="${PYTHON_EXE:-/home/kxj/miniforge3/envs/unitree_rl/bin/python}"
 
@@ -43,6 +45,8 @@ for index in "${!seeds[@]}"; do
         --training_seed "$training_seed" \
         --seed "$EVALUATION_SEED" \
         --video_length "$VIDEO_LENGTH" \
+        --warmup_steps "$WARMUP_STEPS" \
+        --command_x "$COMMAND_X" \
         --output_dir "$output_dir" \
         --device "$DEVICE" \
         2>&1 | tee "$console_log"

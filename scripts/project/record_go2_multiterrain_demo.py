@@ -3,6 +3,7 @@
 """Record one auditable fixed-terrain Go2 MultiTerrain demonstration clip."""
 
 import argparse
+import csv
 import hashlib
 import json
 import sys
@@ -37,7 +38,8 @@ parser.add_argument("--terrain_type", required=True, choices=TERRAIN_NAMES)
 parser.add_argument("--terrain_level", type=int, default=5)
 parser.add_argument("--training_seed", type=int, required=True)
 parser.add_argument("--seed", type=int, default=42, help="Evaluation scenario seed, not training seed.")
-parser.add_argument("--video_length", type=int, default=300, help="Clip length in simulation steps.")
+parser.add_argument("--video_length", type=int, default=1000, help="Clip length in simulation steps.")
+parser.add_argument("--warmup_steps", type=int, default=100, help="Steps excluded from steady-state metrics.")
 parser.add_argument("--output_dir", required=True, help="New per-terrain output directory.")
 parser.add_argument("--command_x", type=float, default=0.35)
 parser.add_argument("--command_y", type=float, default=0.0)
@@ -59,6 +61,8 @@ if args_cli.training_seed < 0:
     parser.error("--training_seed must be non-negative")
 if args_cli.video_length <= 0:
     parser.error("--video_length must be positive")
+if not 0 <= args_cli.warmup_steps < args_cli.video_length:
+    parser.error("--warmup_steps must be in [0, video_length)")
 
 output_dir = Path(args_cli.output_dir).expanduser().resolve()
 if output_dir.exists():
@@ -134,10 +138,9 @@ def main() -> None:
     ranges.lin_vel_y = (args_cli.command_y, args_cli.command_y)
     ranges.ang_vel_z = (args_cli.command_yaw, args_cli.command_yaw)
     ranges.heading = None
-    env_cfg.viewer.origin_type = "asset_root"
-    env_cfg.viewer.asset_name = "robot"
+    env_cfg.viewer.origin_type = "env"
     env_cfg.viewer.env_index = 0
-    env_cfg.viewer.eye = (3.0, 3.0, 2.0)
+    env_cfg.viewer.eye = (5.5, 5.5, 3.0)
     env_cfg.viewer.lookat = (0.0, 0.0, 0.35)
 
     output_dir.mkdir(parents=True)
@@ -179,8 +182,10 @@ def main() -> None:
     xy_error_sum = 0.0
     yaw_error_sum = 0.0
     termination_counts = {"time_out": 0, "base_contact": 0, "bad_orientation": 0}
+    samples = []
+    cumulative_xy_distance = 0.0
     start = time.perf_counter()
-    for _ in range(args_cli.video_length):
+    for step in range(args_cli.video_length):
         actual_column = int(terrain.terrain_types[0].item())
         actual_level = int(terrain.terrain_levels[0].item())
         if actual_column != terrain_column or actual_level != args_cli.terrain_level:
@@ -191,13 +196,34 @@ def main() -> None:
         command = raw_env.command_manager.get_command("base_velocity")
         velocity = raw_env.scene["robot"].data.root_lin_vel_b
         angular_velocity = raw_env.scene["robot"].data.root_ang_vel_b
-        xy_error_sum += float(torch.linalg.vector_norm(command[0, :2] - velocity[0, :2]).item())
-        yaw_error_sum += float(torch.abs(command[0, 2] - angular_velocity[0, 2]).item())
+        xy_error = float(torch.linalg.vector_norm(command[0, :2] - velocity[0, :2]).item())
+        yaw_error = float(torch.abs(command[0, 2] - angular_velocity[0, 2]).item())
+        xy_error_sum += xy_error
+        yaw_error_sum += yaw_error
+        position_before = raw_env.scene["robot"].data.root_pos_w[0, :2].clone()
         with torch.inference_mode():
             actions = policy(observations)
             observations, rewards, dones, _ = env.step(actions)
+        position_after = raw_env.scene["robot"].data.root_pos_w[0, :2]
         reward_sum += float(rewards[0].item())
-        if bool(dones[0].item()):
+        done = bool(dones[0].item())
+        if not done:
+            cumulative_xy_distance += float(torch.linalg.vector_norm(position_after - position_before).item())
+        row = {
+            "step": step,
+            "time_seconds": step * float(raw_env.step_dt),
+            "command_x_mps": float(command[0, 0].item()),
+            "command_y_mps": float(command[0, 1].item()),
+            "command_yaw_radps": float(command[0, 2].item()),
+            "actual_x_mps": float(velocity[0, 0].item()),
+            "actual_y_mps": float(velocity[0, 1].item()),
+            "actual_yaw_radps": float(angular_velocity[0, 2].item()),
+            "xy_error_mps": xy_error,
+            "yaw_error_radps": yaw_error,
+            "done": int(done),
+        }
+        samples.append(row)
+        if done:
             terminations = raw_env.termination_manager
             for name in termination_counts:
                 termination_counts[name] += int(terminations.get_term(name)[0].item())
@@ -207,6 +233,13 @@ def main() -> None:
     videos = sorted(video_dir.glob("*.mp4"))
     if len(videos) != 1 or videos[0].stat().st_size == 0:
         raise RuntimeError(f"expected one non-empty video, found {videos}")
+
+    samples_path = output_dir / "tracking_timeseries.csv"
+    with samples_path.open("w", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(samples[0]))
+        writer.writeheader()
+        writer.writerows(samples)
+    steady_samples = samples[args_cli.warmup_steps :]
 
     metadata = {
         "task": args_cli.task,
@@ -219,13 +252,23 @@ def main() -> None:
         "terrain_level": args_cli.terrain_level,
         "command": {"lin_vel_x": args_cli.command_x, "lin_vel_y": args_cli.command_y, "ang_vel_z": args_cli.command_yaw},
         "video_steps": args_cli.video_length,
+        "warmup_steps": args_cli.warmup_steps,
         "step_dt": float(raw_env.step_dt),
         "simulated_seconds": args_cli.video_length * float(raw_env.step_dt),
         "wall_time_seconds": elapsed,
         "reward_sum": reward_sum,
         "mean_xy_velocity_error_mps": xy_error_sum / args_cli.video_length,
         "mean_yaw_velocity_error_radps": yaw_error_sum / args_cli.video_length,
+        "post_warmup_mean_xy_velocity_error_mps": sum(row["xy_error_mps"] for row in steady_samples)
+        / len(steady_samples),
+        "post_warmup_mean_yaw_velocity_error_radps": sum(row["yaw_error_radps"] for row in steady_samples)
+        / len(steady_samples),
+        "post_warmup_mean_actual_x_velocity_mps": sum(row["actual_x_mps"] for row in steady_samples)
+        / len(steady_samples),
+        "cumulative_xy_distance_m": cumulative_xy_distance,
         "terminations": termination_counts,
+        "tracking_timeseries": str(samples_path),
+        "tracking_timeseries_sha256": sha256_file(samples_path),
         "video": str(videos[0]),
         "video_size_bytes": videos[0].stat().st_size,
         "video_sha256": sha256_file(videos[0]),
