@@ -59,6 +59,35 @@ def multiterrain_levels_survival(
     return torch.mean(terrain.terrain_levels.float())
 
 
+def multiterrain_levels_tracking_survival(
+    env: ManagerBasedRLEnv,
+    env_ids: Sequence[int],
+    reward_term_name: str = "track_lin_vel_xy",
+    tracking_threshold: float = 0.65,
+) -> torch.Tensor:
+    """Adjust terrain difficulty using both survival and velocity tracking.
+
+    An environment advances only after surviving the full episode while its
+    average linear-velocity tracking reward reaches ``tracking_threshold`` of
+    the term's maximum weighted reward. Full episodes with weaker tracking and
+    failures in the first half are moved down; intermediate failures stay at
+    their current level.
+    """
+    terrain = env.scene.terrain
+    episode_length = env.episode_length_buf[env_ids]
+    reached_time_limit = episode_length >= env.max_episode_length - 1
+
+    reward_term = env.reward_manager.get_term_cfg(reward_term_name)
+    tracking_reward = env.reward_manager._episode_sums[reward_term_name][env_ids] / env.max_episode_length_s
+    tracks_well = tracking_reward >= reward_term.weight * tracking_threshold
+
+    move_up = reached_time_limit & tracks_well
+    move_down = (episode_length < env.max_episode_length * 0.5) | (reached_time_limit & ~tracks_well)
+    move_down &= ~move_up
+    terrain.update_env_origins(env_ids, move_up, move_down)
+    return torch.mean(terrain.terrain_levels.float())
+
+
 def ang_vel_cmd_levels(
     env: ManagerBasedRLEnv,
     env_ids: Sequence[int],

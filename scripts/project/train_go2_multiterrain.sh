@@ -4,7 +4,15 @@ set -Eeuo pipefail
 PROJECT_DIR="${UNITREE_RL_LAB_PATH:-/home/kxj/rl_ws/unitree_rl_lab}"
 WORKSPACE_DIR="$(dirname "$PROJECT_DIR")"
 
-TASK="Unitree-Go2-Velocity-MultiTerrain"
+TASK_VARIANT="${TASK_VARIANT:-survival}"
+case "$TASK_VARIANT" in
+    survival) TASK="Unitree-Go2-Velocity-MultiTerrain" ;;
+    tracking_aware) TASK="Unitree-Go2-Velocity-MultiTerrain-TrackingAware" ;;
+    *)
+        echo "TASK_VARIANT must be survival or tracking_aware: $TASK_VARIANT" >&2
+        exit 2
+        ;;
+esac
 NUM_ENVS="${NUM_ENVS:-2048}"
 SEED="${SEED:-42}"
 MAX_ITERATIONS="${MAX_ITERATIONS:-2000}"
@@ -45,6 +53,7 @@ Defaults:
   GPU_POLL_SECONDS=5
   RESUME_RUN=                 # existing run directory name; requires RESUME_CHECKPOINT
   RESUME_CHECKPOINT=          # checkpoint filename; requires RESUME_RUN
+  TASK_VARIANT=survival       # survival or tracking_aware
 
 Examples:
   RUN_STAGE=smoke NUM_ENVS=64 MAX_ITERATIONS=5 scripts/project/train_go2_multiterrain.sh
@@ -126,6 +135,7 @@ fi
 cd "$PROJECT_DIR"
 
 echo "Task:           $TASK"
+echo "Task variant:   $TASK_VARIANT"
 echo "Environments:   $NUM_ENVS"
 echo "Training seed:  $SEED"
 echo "Iterations:     $MAX_ITERATIONS"

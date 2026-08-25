@@ -95,3 +95,16 @@ class MultiTerrainRobotPlayEnvCfg(MultiTerrainRobotEnvCfg):
         self.scene.terrain.terrain_generator.num_rows = 2
         self.scene.terrain.terrain_generator.num_cols = 20
         self.commands.base_velocity.ranges = self.commands.base_velocity.limit_ranges
+
+
+@configclass
+class TrackingAwareMultiTerrainRobotEnvCfg(MultiTerrainRobotEnvCfg):
+    """Training variant that requires tracking quality before terrain promotion."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.curriculum.terrain_levels.func = mdp.multiterrain_levels_tracking_survival
+        self.curriculum.terrain_levels.params = {
+            "reward_term_name": "track_lin_vel_xy",
+            "tracking_threshold": 0.65,
+        }
