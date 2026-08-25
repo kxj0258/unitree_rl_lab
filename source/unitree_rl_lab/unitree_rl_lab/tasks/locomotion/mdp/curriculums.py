@@ -37,6 +37,28 @@ def lin_vel_cmd_levels(
     return torch.tensor(ranges.lin_vel_x[1], device=env.device)
 
 
+def multiterrain_levels_survival(
+    env: ManagerBasedRLEnv,
+    env_ids: Sequence[int],
+) -> torch.Tensor:
+    """Adjust complex-terrain difficulty from episode survival.
+
+    The upstream distance curriculum requires a four-metre net displacement
+    on the current eight-metre tiles. That criterion is poorly matched to
+    velocity commands that may be resampled or reverse direction within an
+    episode. MultiTerrain instead advances environments that reach the time
+    limit, lowers environments that fail in the first half of an episode, and
+    leaves intermediate outcomes at their current level.
+    """
+    terrain = env.scene.terrain
+    episode_length = env.episode_length_buf[env_ids]
+    move_up = episode_length >= env.max_episode_length - 1
+    move_down = episode_length < env.max_episode_length * 0.5
+    move_down &= ~move_up
+    terrain.update_env_origins(env_ids, move_up, move_down)
+    return torch.mean(terrain.terrain_levels.float())
+
+
 def ang_vel_cmd_levels(
     env: ManagerBasedRLEnv,
     env_ids: Sequence[int],
