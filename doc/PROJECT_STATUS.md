@@ -96,6 +96,17 @@ SHA-256:   9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
 
 相较 flat-trained control 的相同 random-rough subset，rough 正式模型将 XY error 降低 55.7%，将 timeout rate 提升 43.23 个百分点。该结论仍来自单一训练 seed 42。
 
+## Rough 多训练 Seed：已完成
+
+- 使用相同 2048 environments × 3000 iterations 预算完成 training seeds 42、7、123；
+- 三个 formal run 共 442,368,000 transitions，exit 与非有限值检查全部通过；
+- 每个 training seed 评估 `model_2400/2900/2999` × scenario seeds 7/42/123；
+- 审计 27 个 rough runs、3456 episodes，base contact 与非有限值均为 0；
+- Per-seed official：seed 42 `model_2900`、seed 7 `model_2999`、seed 123 `model_2999`；
+- 固定 iteration 跨 training-seed 主结果推荐 `model_2999`；
+- 固定 `model_2999`：overall XY `0.0956 ± 0.0009 m/s`，rough XY `0.1131 ± 0.0013 m/s`，timeout `1144/1152`；
+- 完整结果见 `RESULTS_ROUGH_MULTITRAINING.md`。
+
 ## 兼容修改
 
 ### Isaac Lab
@@ -111,6 +122,9 @@ SHA-256:   9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
 - `scripts/project/evaluate_go2_rough_matrix.sh`：正式 12-run rough checkpoint 矩阵与 dry-run。
 - `scripts/project/audit_go2_rough_evaluation.py`：评估完整性、非有限值、termination 和分层指标审计。
 - `scripts/project/archive_go2_rough.py`：rough official marker、聚合 CSV、inventory 和 SHA manifest 的 create/verify。
+- `scripts/project/evaluate_go2_rough_training_seed_matrix.sh`：明确区分 training/evaluation seed 的单 training-seed 9-run 矩阵。
+- `scripts/project/audit_go2_rough_multitraining.py`：27-run 多 training-seed 审计及 selected/fixed 聚合。
+- `scripts/project/archive_go2_rough_multitraining.py`：追加式六文件多 training-seed 归档。
 
 ## 视频说明
 
@@ -120,8 +134,7 @@ SHA-256:   9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
 
 ## 下一阶段计划
 
-1. 至少补充 3 个训练 seed，区分训练方差与评估场景方差。
-2. 设计 terrain curriculum、扰动、观测噪声和 reward 消融。
-3. 逐项扩展 stairs、boxes、slopes，并为每类新增地形定义独立评估协议。
-4. 完成 rough 正式视频、ONNX 导出与 MuJoCo Sim2Sim 回归。
-5. 在完成 Sim2Sim 与安全审查后再讨论 Sim2Real；当前不宣称实机部署。
+1. 设计 terrain curriculum、扰动、观测噪声和 reward 消融，每次只改变一个因素。
+2. 逐项扩展 stairs、boxes、slopes，并为每类新增地形定义独立评估协议。
+3. 完成 rough 正式视频、ONNX 导出与 MuJoCo Sim2Sim 回归。
+4. 在完成 Sim2Sim 与安全审查后再讨论 Sim2Real；当前不宣称实机部署。

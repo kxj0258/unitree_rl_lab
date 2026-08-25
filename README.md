@@ -58,7 +58,7 @@ Formal rough experiment:
 
 Official rough checkpoint: `model_2900.pt` (`SHA-256: 9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889`). Across its 384 formal episodes it achieved 0.0950 ± 0.0008 m/s overall XY error, 0.1123 ± 0.0023 m/s random-rough XY error, and a 99.22% timeout rate. Against the flat-trained control on the same random-rough subset, it reduced XY error by 55.7% and increased timeout rate by 43.23 percentage points.
 
-This result covers one training seed and only flat/random-uniform rough terrain. It does not establish stairs, boxes, slopes, general complex-terrain, Sim2Sim, or real-robot performance.
+The follow-up multi-training-seed stage completed the same formal budget for training seeds 42, 7, and 123. The fixed `model_2999` comparison across those three seeds achieved 0.0956 ± 0.0009 m/s overall XY error, 0.1131 ± 0.0013 m/s random-rough XY error, and 1144/1152 timeouts. The uncertainty is sample standard deviation across independent training seeds. This still covers only flat/random-uniform rough terrain; it does not establish stairs, boxes, slopes, general complex-terrain, Sim2Sim, or real-robot performance.
 
 Project documentation:
 
@@ -66,8 +66,9 @@ Project documentation:
 - [Reproduction guide](doc/REPRODUCTION.md)
 - [Baseline results](doc/RESULTS_BASELINE.md)
 - [Rough-terrain results](doc/RESULTS_ROUGH.md)
+- [Rough multi-training-seed results](doc/RESULTS_ROUGH_MULTITRAINING.md)
 - [Resume and interview notes](doc/RESUME_PROJECT.md)
-- [Latest session handoff](doc/SESSION_SUMMARY_2026-08-25_ROUGH_COMPLETE.md)
+- [Latest session handoff](doc/SESSION_HANDOFF_2026-08-25_ROUGH_MULTITRAINING_ARCHIVED.md)
 - [Evaluation artifact manifest](evaluation/README.md)
 
 Reusable commands:
@@ -96,6 +97,12 @@ DRY_RUN=1 scripts/project/evaluate_go2_rough_matrix.sh
 scripts/project/audit_go2_rough_evaluation.py \
   --verify-csv doc/repro/rough_eval_multiseed_2026-08-25.csv
 scripts/project/archive_go2_rough.py --verify
+
+# Audit and verify the multi-training-seed rough archive
+scripts/project/audit_go2_rough_multitraining.py \
+  --verify-selected-csv doc/repro/rough_multitraining_selected_official_2026-08-25.csv \
+  --verify-fixed-csv doc/repro/rough_multitraining_fixed_checkpoints_2026-08-25.csv
+scripts/project/archive_go2_rough_multitraining.py --verify
 
 # Record a single-environment follow video
 scripts/project/record_go2_video.sh \

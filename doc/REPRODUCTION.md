@@ -187,6 +187,33 @@ scripts/project/archive_go2_rough.py --verify
 
 在全新归档位置创建文件时使用 `--create --output-dir <NEW_DIRECTORY>`；脚本拒绝覆盖任意已有目标。
 
+## Rough 多训练 Seed 评估与归档
+
+对一个新的 formal training seed 预览 9-run checkpoint 矩阵：
+
+```bash
+TRAINING_SEED=<TRAINING_SEED> \
+ROUGH_RUN=/absolute/path/to/formal_training_run \
+DRY_RUN=1 \
+scripts/project/evaluate_go2_rough_training_seed_matrix.sh
+```
+
+正式执行时必须提供一个不存在的 `OUTPUT_ROOT`。输出名称同时编码 training seed 与 evaluation scenario seed，避免将二者混淆。
+
+验证已完成的三个 training seeds、27 rough runs 和 3456 episodes：
+
+```bash
+scripts/project/audit_go2_rough_multitraining.py \
+  --verify-selected-csv doc/repro/rough_multitraining_selected_official_2026-08-25.csv \
+  --verify-fixed-csv doc/repro/rough_multitraining_fixed_checkpoints_2026-08-25.csv
+
+scripts/project/archive_go2_rough_multitraining.py --verify
+sha256sum --check doc/repro/rough_multitraining_evaluation_sha256_2026-08-25.txt
+sha256sum --check doc/repro/rough_multitraining_final_artifacts_2026-08-25.sha256
+```
+
+旧 seed-42 rough 归档与新的多 training-seed 归档是追加关系；不要覆盖或删除任意旧 manifest。
+
 ## 录制 follow 视频
 
 输出目录必须不存在：
@@ -272,6 +299,8 @@ Rough 正式 console 与 GPU CSV：
 sha256sum --check doc/repro/final_artifacts_2026-08-25.sha256
 sha256sum --check doc/repro/rough_evaluation_sha256_2026-08-25.txt
 sha256sum --check doc/repro/rough_final_artifacts_2026-08-25.sha256
+sha256sum --check doc/repro/rough_multitraining_evaluation_sha256_2026-08-25.txt
+sha256sum --check doc/repro/rough_multitraining_final_artifacts_2026-08-25.sha256
 ```
 
 大型模型、视频和评估输出位于本地 `logs/`、`evaluation/`，默认不提交 Git；校验清单和聚合结果保存在 `doc/repro/`。

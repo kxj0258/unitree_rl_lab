@@ -75,11 +75,26 @@ SHA-256: 9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
 
 完整结果见 `doc/RESULTS_ROUGH.md`，聚合数据见 `doc/repro/rough_eval_multiseed_2026-08-25.csv`。
 
+## Rough 多训练 Seed 评估
+
+新增两个独立 training-seed 评估根目录：
+
+```text
+rough_stratified_v1_trainseed7_2026-08-25/
+rough_stratified_v1_trainseed123_2026-08-25/
+```
+
+它们与原 training seed 42 的 rough runs 合计构成：三个 training seeds × 三个 checkpoint iterations × 三个 evaluation scenario seeds，共 27 rough runs、3456 episodes。目录名称中的 `trainseed` 与 `evalseed` 分别表示训练 seed 和评估场景 seed，不得混用。
+
+Per-seed selected official 为 seed 42 `model_2900`、seed 7 `model_2999`、seed 123 `model_2999`；固定 iteration 的跨 training-seed 主结果推荐 `model_2999`。完整结果见 `doc/RESULTS_ROUGH_MULTITRAINING.md`。
+
 ## 校验与重新生成
 
 ```bash
 sha256sum --check doc/repro/final_artifacts_2026-08-25.sha256
 sha256sum --check doc/repro/rough_final_artifacts_2026-08-25.sha256
+sha256sum --check doc/repro/rough_multitraining_evaluation_sha256_2026-08-25.txt
+sha256sum --check doc/repro/rough_multitraining_final_artifacts_2026-08-25.sha256
 ```
 
 重新生成方法见 `doc/REPRODUCTION.md` 以及 `scripts/project/` 中的 baseline/rough 训练、评估、审计、归档和视频脚本。

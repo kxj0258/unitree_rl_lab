@@ -1,0 +1,55 @@
+Unitree Go2 rough velocity multi-training-seed official checkpoints
+Selected: 2026-08-25
+
+Protocol: rough_stratified v1; 64 environments x 2 episodes; evaluation scenario seeds 7, 42, 123.
+Training configuration: 2048 environments; 3000 PPO iterations; 147456000 transitions per training seed.
+
+Training seed: 42
+Checkpoint: model_2900.pt
+Path: logs/rsl_rl/unitree_go2_velocity_rough/2026-08-25_04-40-21_roughmix50_curriculum_formal_seed42_env2048_i3000/model_2900.pt
+Size: 4639669 bytes
+SHA-256: 9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
+Coverage: 384 episodes (192 flat, 192 random_rough).
+Mean reward: 31.881931.
+Mean XY velocity error: 0.094979 m/s.
+Random-rough XY velocity error: 0.112257 m/s.
+Mean yaw velocity error: 0.070230 rad/s.
+Timeout: 381/384.
+Base-contact termination: 0/384.
+Bad-orientation termination: 3/384.
+
+Training seed: 7
+Checkpoint: model_2999.pt
+Path: logs/rsl_rl/unitree_go2_velocity_rough/2026-08-25_13-53-47_roughmix50_curriculum_formal_seed7_env2048_i3000/model_2999.pt
+Size: 4639669 bytes
+SHA-256: 353ea7a9d1cfa3e35fdc8678901ede952c54e7f4fb54782ad86fd2f02352f4af
+Coverage: 384 episodes (192 flat, 192 random_rough).
+Mean reward: 32.024427.
+Mean XY velocity error: 0.094615 m/s.
+Random-rough XY velocity error: 0.111705 m/s.
+Mean yaw velocity error: 0.070443 rad/s.
+Timeout: 383/384.
+Base-contact termination: 0/384.
+Bad-orientation termination: 1/384.
+
+Training seed: 123
+Checkpoint: model_2999.pt
+Path: logs/rsl_rl/unitree_go2_velocity_rough/2026-08-25_17-23-39_roughmix50_curriculum_formal_seed123_env2048_i3000/model_2999.pt
+Size: 4639669 bytes
+SHA-256: d83a237bbf9918b3f81d269b1ce4684659756ee30c902b384f92d9dfced0945c
+Coverage: 384 episodes (192 flat, 192 random_rough).
+Mean reward: 32.183355.
+Mean XY velocity error: 0.096437 m/s.
+Random-rough XY velocity error: 0.113291 m/s.
+Mean yaw velocity error: 0.071103 rad/s.
+Timeout: 380/384.
+Base-contact termination: 0/384.
+Bad-orientation termination: 4/384.
+
+Fixed-iteration multi-training-seed recommendation: model_2999.pt.
+The historical seed-42 official model_2900.pt remains unchanged; model_2999 is the primary fixed-iteration comparison across all three training seeds.
+This archive marks existing checkpoints. It does not replace, copy, or modify model files.
+Official selection inventory:
+training_seed=42 official=model_2900.pt sha256=9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
+training_seed=7 official=model_2999.pt sha256=353ea7a9d1cfa3e35fdc8678901ede952c54e7f4fb54782ad86fd2f02352f4af
+training_seed=123 official=model_2999.pt sha256=d83a237bbf9918b3f81d269b1ce4684659756ee30c902b384f92d9dfced0945c
