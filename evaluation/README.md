@@ -1,6 +1,6 @@
 # Evaluation Artifacts
 
-本目录保存 Go2 baseline 的本地评估与展示产物。大型二进制、逐 episode CSV 和运行日志默认不提交 Git；可追踪的结论与校验清单位于 `doc/` 和 `doc/repro/`。
+本目录保存 Go2 flat baseline 与 rough 扩展的本地评估和展示产物。大型二进制、逐 episode CSV 和运行日志默认不提交 Git；可追踪的结论与校验清单位于 `doc/` 和 `doc/repro/`。
 
 ## 正式 checkpoint
 
@@ -54,10 +54,32 @@ video_model2999_seed42_follow_1000/exported/policy.onnx
 
 Follow 与 grid 导出的 ONNX 文件 byte-for-byte 相同。TorchScript archive 的权重张量一致，但自动生成的类名修饰和 serialization ID 会导致两次导出的文件 hash 不同，因此只指定 follow 版本作为正式归档。
 
+## Rough 分层评估
+
+Rough 正式评估目录：
+
+```text
+rough_stratified_v1_2026-08-25/
+```
+
+矩阵包含 flat `model_2999` control 与 rough `model_2400/2900/2999`，评估场景 seeds 7/42/123。每个 run 为 64 environments × 2 episodes，共 12 runs、1536 episodes。
+
+每个 run 目录包含 `metadata.json`、`episodes.csv` 和 `summary.json`；对应的完整控制台日志保存在评估根目录。协议精确分配 50% flat / 50% random_rough，两类地形均覆盖 level 0–9，并输出 overall、terrain type、level 与 type-level 聚合。
+
+正式 rough checkpoint：
+
+```text
+../logs/rsl_rl/unitree_go2_velocity_rough/2026-08-25_04-40-21_roughmix50_curriculum_formal_seed42_env2048_i3000/model_2900.pt
+SHA-256: 9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
+```
+
+完整结果见 `doc/RESULTS_ROUGH.md`，聚合数据见 `doc/repro/rough_eval_multiseed_2026-08-25.csv`。
+
 ## 校验与重新生成
 
 ```bash
 sha256sum --check doc/repro/final_artifacts_2026-08-25.sha256
+sha256sum --check doc/repro/rough_final_artifacts_2026-08-25.sha256
 ```
 
-重新生成方法见 `doc/REPRODUCTION.md`、`scripts/project/evaluate_go2.py` 和 `scripts/project/record_go2_video.sh`。
+重新生成方法见 `doc/REPRODUCTION.md` 以及 `scripts/project/` 中的 baseline/rough 训练、评估、审计、归档和视频脚本。

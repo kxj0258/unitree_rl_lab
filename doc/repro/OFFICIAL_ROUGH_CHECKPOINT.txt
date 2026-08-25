@@ -1,0 +1,31 @@
+Unitree Go2 rough velocity official checkpoint
+Selected: 2026-08-25
+
+Training task: Unitree-Go2-Velocity-Rough
+Training environments: 2048
+Training seed: 42
+Training iterations: 3000
+Training transitions: 147456000
+Training wall time: 2:11:41
+Training exit code: 0
+Training non-finite values: 0
+
+Path: logs/rsl_rl/unitree_go2_velocity_rough/2026-08-25_04-40-21_roughmix50_curriculum_formal_seed42_env2048_i3000/model_2900.pt
+Size: 4639669 bytes
+SHA-256: 9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
+
+Selection protocol: flat model_2999 control and rough model_2400/model_2900/model_2999 evaluated with scenario seeds 7, 42, and 123; 64 environments and 2 episodes per environment per run.
+Terrain protocol: rough_stratified v1; exact 50/50 flat/random_rough assignment; both terrain types cover levels 0-9; terrain and command curriculum updates disabled during evaluation.
+Official-checkpoint coverage: 384 episodes (192 flat, 192 random_rough).
+Mean reward: 31.881931.
+Mean XY velocity error: 0.094979 m/s.
+Flat XY velocity error: 0.077702 m/s.
+Random-rough XY velocity error: 0.112257 m/s.
+Mean yaw velocity error: 0.070230 rad/s.
+Timeout rate: 0.992188 (381/384).
+Base-contact termination rate: 0.000000 (0/384).
+Bad-orientation termination rate: 0.007812 (3/384).
+
+Selection reason: model_2900 has the lowest overall and random-rough XY tracking error, the lowest action delta and mechanical-power proxy among the two equally reliable late checkpoints, and lower cross-seed XY variation than model_2999. Model_2999 remains a retained late-training alternative.
+
+This marks an existing checkpoint. It does not replace, copy, or modify the model file.

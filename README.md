@@ -15,7 +15,8 @@ This workspace includes a completed and reproducible Go2 flat-terrain velocity-l
 - PyTorch 2.7.0+cu128
 - Isaac Sim 5.1.0.0
 - Isaac Lab v2.3.2
-- Unitree RL Lab commit `4960b84732b0c2ec593dccbfe963fda1bcd7b1e3`
+- Unitree RL Lab upstream baseline commit `4960b84732b0c2ec593dccbfe963fda1bcd7b1e3`
+- Go2 rough task commit `dea17cc`; stratified evaluator commit `61843d8`
 
 Baseline experiment:
 
@@ -40,14 +41,33 @@ Official-checkpoint evaluation results (mean ± standard deviation across the th
 | Episodes reaching the 20 s time limit | 382 / 384 (99.48%) |
 | Base-contact terminations | 0 / 384 |
 
-These are multiple evaluation-scenario seeds for one policy trained with seed 42, not multiple independently trained seeds. The current baseline enables only the flat sub-terrain; complex terrain and training-seed ablations remain future work.
+These are multiple evaluation-scenario seeds for one policy trained with seed 42, not multiple independently trained seeds. This canonical baseline enables only the flat sub-terrain; its metrics remain separate from the rough-stratified experiment below.
+
+## Go2 Rough-Terrain Extension
+
+The completed rough stage adds `Unitree-Go2-Velocity-Rough` with a 50/50 mix of flat and random-uniform rough terrain. It keeps the 45-dimensional policy observation unchanged and trains terrain curriculum from scratch with the same 2,048-environment, seed-42, 3,000-iteration budget.
+
+Formal rough experiment:
+
+- 10 × 20 terrain grid with levels 0–9
+- 50% flat and 50% random-uniform rough terrain (0.01–0.06 m noise)
+- 147,456,000 simulation transitions
+- 2:11:41 training time
+- 12-run checkpoint matrix: flat control plus three rough checkpoints, scenario seeds 7/42/123
+- 1,536 audited evaluation episodes with zero non-finite values and zero base-contact terminations
+
+Official rough checkpoint: `model_2900.pt` (`SHA-256: 9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889`). Across its 384 formal episodes it achieved 0.0950 ± 0.0008 m/s overall XY error, 0.1123 ± 0.0023 m/s random-rough XY error, and a 99.22% timeout rate. Against the flat-trained control on the same random-rough subset, it reduced XY error by 55.7% and increased timeout rate by 43.23 percentage points.
+
+This result covers one training seed and only flat/random-uniform rough terrain. It does not establish stairs, boxes, slopes, general complex-terrain, Sim2Sim, or real-robot performance.
 
 Project documentation:
 
 - [Current project status](doc/PROJECT_STATUS.md)
 - [Reproduction guide](doc/REPRODUCTION.md)
 - [Baseline results](doc/RESULTS_BASELINE.md)
+- [Rough-terrain results](doc/RESULTS_ROUGH.md)
 - [Resume and interview notes](doc/RESUME_PROJECT.md)
+- [Latest session handoff](doc/SESSION_SUMMARY_2026-08-25_ROUGH_COMPLETE.md)
 - [Evaluation artifact manifest](evaluation/README.md)
 
 Reusable commands:
@@ -55,6 +75,9 @@ Reusable commands:
 ```bash
 # Train with the recorded baseline defaults
 scripts/project/train_go2_baseline.sh
+
+# Train the recorded 50/50 rough task defaults
+scripts/project/train_go2_rough.sh
 
 # Analyze a TensorBoard run
 scripts/project/analyze_tensorboard.py logs/rsl_rl/unitree_go2_velocity/<RUN_DIRECTORY>
@@ -65,6 +88,14 @@ scripts/project/evaluate_go2.py \
   --num_envs 64 --seed 42 --episodes_per_env 2 \
   --checkpoint /absolute/path/to/model_2999.pt \
   --output_dir evaluation/eval_model2999_env64_seed42_ep2
+
+# Preview or execute the formal rough checkpoint matrix
+DRY_RUN=1 scripts/project/evaluate_go2_rough_matrix.sh
+
+# Audit and verify the completed rough evaluation archive
+scripts/project/audit_go2_rough_evaluation.py \
+  --verify-csv doc/repro/rough_eval_multiseed_2026-08-25.csv
+scripts/project/archive_go2_rough.py --verify
 
 # Record a single-environment follow video
 scripts/project/record_go2_video.sh \
