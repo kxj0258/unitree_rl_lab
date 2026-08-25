@@ -68,7 +68,7 @@ Project documentation:
 - [Rough-terrain results](doc/RESULTS_ROUGH.md)
 - [Rough multi-training-seed results](doc/RESULTS_ROUGH_MULTITRAINING.md)
 - [Resume and interview notes](doc/RESUME_PROJECT.md)
-- [Latest session handoff](doc/SESSION_HANDOFF_2026-08-25_ROUGH_MULTITRAINING_ARCHIVED.md)
+- [Latest session handoff](doc/SESSION_HANDOFF_2026-08-25_ROUGH_MULTITRAINING_FINAL.md)
 - [Evaluation artifact manifest](evaluation/README.md)
 
 Reusable commands:
