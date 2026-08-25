@@ -5,6 +5,7 @@ PROJECT_DIR="${UNITREE_RL_LAB_PATH:-/home/kxj/rl_ws/unitree_rl_lab}"
 WORKSPACE_DIR="$(dirname "$PROJECT_DIR")"
 
 TASK_VARIANT="${TASK_VARIANT:-survival}"
+EXPERIMENT_NAME="unitree_go2_velocity_multiterrain"
 case "$TASK_VARIANT" in
     survival) TASK="Unitree-Go2-Velocity-MultiTerrain" ;;
     tracking_aware) TASK="Unitree-Go2-Velocity-MultiTerrain-TrackingAware" ;;
@@ -136,6 +137,7 @@ cd "$PROJECT_DIR"
 
 echo "Task:           $TASK"
 echo "Task variant:   $TASK_VARIANT"
+echo "Experiment:     $EXPERIMENT_NAME"
 echo "Environments:   $NUM_ENVS"
 echo "Training seed:  $SEED"
 echo "Iterations:     $MAX_ITERATIONS"
@@ -176,6 +178,7 @@ systemd-inhibit \
     --seed "$SEED" \
     --max_iterations "$MAX_ITERATIONS" \
     --run_name "$RUN_NAME" \
+    --experiment_name "$EXPERIMENT_NAME" \
     --logger "$LOGGER" \
     --device "$DEVICE" \
     "${resume_args[@]}" \
