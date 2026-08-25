@@ -1,0 +1,27 @@
+Unitree Go2 MultiTerrain provisional Demo/export checkpoint
+Selected: 2026-08-25
+
+Status: prototype only; not a multi-training-seed formal result.
+Task: Unitree-Go2-Velocity-MultiTerrain
+Configuration: multiterrain_v3_challenging_noheightscan
+Training seed: 42
+Training lineage: one continuously resumed policy, not independent training seeds
+Checkpoint: model_2995.pt
+Path: logs/rsl_rl/unitree_go2_velocity_multiterrain/2026-08-25_22-53-12_multiterrain_v3_challenging_noheightscan_prototype_resume_from2396_seed42_env1024_addi600_totalapprox3000/model_2995.pt
+Size: 4639669 bytes
+SHA-256: 67da571685f42e56df412730cd6c13c335a63aa85a07beaf7f97b35cfb3dd2da
+
+Evaluation protocol: multiterrain_stratified smoke v0
+Evaluation scenario seed: 42
+Coverage: 70 environments x 2 episodes = 140 episodes; seven terrain types; levels 0-9 in every type.
+Mean reward: 16.1924
+Mean XY velocity error: 0.2918 m/s
+Mean yaw velocity error: 0.1646 rad/s
+Timeout: 108/140
+Base-contact termination: 0/140
+Bad-orientation termination: 32/140
+
+TorchScript export SHA-256: 2acbed11b1ff6648d8755d576bd9bc42bffc35d283d2cb59ae3dcee852dfb304
+ONNX export SHA-256: 0e13dd581d4606d52bb8642eeaa68ce5d2e81504bf287e2609aa8485682a4f4a
+
+This archive identifies existing artifacts. It does not copy, replace, move, or modify them.
