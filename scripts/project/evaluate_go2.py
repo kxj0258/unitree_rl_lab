@@ -26,11 +26,12 @@ parser.add_argument("--num_envs", type=int, default=64, help="Parallel evaluatio
 parser.add_argument("--seed", type=int, default=42, help="Environment seed.")
 parser.add_argument(
     "--terrain_protocol",
-    choices=("legacy", "rough_stratified"),
+    choices=("legacy", "rough_stratified", "multiterrain_stratified"),
     default="legacy",
     help=(
         "Terrain evaluation protocol. 'legacy' preserves the original randomized-terrain "
-        "evaluation behavior; 'rough_stratified' uses the fixed 10x20 Go2 rough grid."
+        "evaluation behavior; 'rough_stratified' uses the fixed 10x20 Go2 rough grid; "
+        "'multiterrain_stratified' covers all levels of all seven Go2 MultiTerrain types."
     ),
 )
 parser.add_argument("--disable_fabric", action="store_true", help="Disable Fabric and use USD I/O.")
@@ -63,6 +64,16 @@ if args_cli.terrain_protocol == "rough_stratified":
         parser.error("rough_stratified requires an even --num_envs of at least 20")
     if args_cli.seed < 0:
         parser.error("rough_stratified requires a non-negative --seed")
+if args_cli.terrain_protocol == "multiterrain_stratified":
+    if args_cli.task != "Unitree-Go2-Velocity-MultiTerrain":
+        parser.error(
+            "--terrain_protocol multiterrain_stratified requires "
+            "--task Unitree-Go2-Velocity-MultiTerrain"
+        )
+    if args_cli.num_envs < 70 or args_cli.num_envs % 70:
+        parser.error("multiterrain_stratified requires --num_envs to be a positive multiple of 70")
+    if args_cli.seed < 0:
+        parser.error("multiterrain_stratified requires a non-negative --seed")
 
 output_dir = Path(args_cli.output_dir).expanduser().resolve()
 if output_dir.exists():
@@ -139,8 +150,8 @@ def configure_terrain_protocol(env_cfg) -> None:
     terrain_cfg = env_cfg.scene.terrain
     generator_cfg = getattr(terrain_cfg, "terrain_generator", None)
     if generator_cfg is None:
-        if args_cli.terrain_protocol == "rough_stratified":
-            raise ValueError("rough_stratified requires a terrain generator")
+        if args_cli.terrain_protocol in {"rough_stratified", "multiterrain_stratified"}:
+            raise ValueError(f"{args_cli.terrain_protocol} requires a terrain generator")
         return
 
     if args_cli.terrain_protocol == "legacy":
@@ -148,16 +159,33 @@ def configure_terrain_protocol(env_cfg) -> None:
         return
 
     sub_terrains = generator_cfg.sub_terrains
-    if list(sub_terrains) != ["flat", "random_rough"]:
+    if args_cli.terrain_protocol == "rough_stratified":
+        expected_names = ["flat", "random_rough"]
+        expected_proportions = [0.5, 0.5]
+    else:
+        expected_names = [
+            "flat",
+            "random_rough",
+            "pyramid_slope",
+            "inverted_pyramid_slope",
+            "pyramid_stairs",
+            "inverted_pyramid_stairs",
+            "boxes",
+        ]
+        expected_proportions = [0.10, 0.20, 0.10, 0.10, 0.15, 0.15, 0.20]
+    if list(sub_terrains) != expected_names:
         raise ValueError(
-            "rough_stratified requires ordered sub-terrains: ['flat', 'random_rough']; "
+            f"{args_cli.terrain_protocol} requires ordered sub-terrains {expected_names}; "
             f"got {list(sub_terrains)}"
         )
     proportions = [float(cfg.proportion) for cfg in sub_terrains.values()]
     proportion_sum = sum(proportions)
     normalized = [value / proportion_sum for value in proportions]
-    if any(abs(value - 0.5) > 1.0e-9 for value in normalized):
-        raise ValueError(f"rough_stratified requires a 50/50 terrain mix; got {normalized}")
+    if any(abs(actual - expected) > 1.0e-9 for actual, expected in zip(normalized, expected_proportions)):
+        raise ValueError(
+            f"{args_cli.terrain_protocol} requires terrain proportions {expected_proportions}; "
+            f"got {normalized}"
+        )
 
     generator_cfg.seed = args_cli.seed
     generator_cfg.curriculum = True
@@ -188,27 +216,41 @@ def terrain_column_names(generator_cfg) -> list[str]:
     return result
 
 
-def apply_rough_stratification(raw_env, num_envs: int) -> bool:
-    """Assign paired flat/rough environments across all difficulty levels."""
+def apply_terrain_stratification(raw_env, num_envs: int) -> bool:
+    """Assign deterministic terrain types and levels for a stratified protocol."""
 
-    if args_cli.terrain_protocol != "rough_stratified":
+    if args_cli.terrain_protocol not in {"rough_stratified", "multiterrain_stratified"}:
         return False
 
     terrain = raw_env.scene.terrain
     generator_cfg = raw_env.cfg.scene.terrain.terrain_generator
     num_rows = int(generator_cfg.num_rows)
     num_cols = int(generator_cfg.num_cols)
-    columns_per_type = num_cols // 2
-    envs_per_type = num_envs // 2
     device = terrain.terrain_levels.device
+    column_names = terrain_column_names(generator_cfg)
 
-    local_ids = torch.arange(envs_per_type, device=device, dtype=torch.long)
-    local_columns = torch.div(
-        local_ids * columns_per_type, envs_per_type, rounding_mode="floor"
-    )
-    paired_levels = torch.remainder(local_ids + args_cli.seed, num_rows)
-    terrain.terrain_types[:] = torch.cat((local_columns, local_columns + columns_per_type))
-    terrain.terrain_levels[:] = torch.cat((paired_levels, paired_levels))
+    if args_cli.terrain_protocol == "rough_stratified":
+        columns_per_type = num_cols // 2
+        envs_per_type = num_envs // 2
+        local_ids = torch.arange(envs_per_type, device=device, dtype=torch.long)
+        local_columns = torch.div(local_ids * columns_per_type, envs_per_type, rounding_mode="floor")
+        paired_levels = torch.remainder(local_ids + args_cli.seed, num_rows)
+        terrain.terrain_types[:] = torch.cat((local_columns, local_columns + columns_per_type))
+        terrain.terrain_levels[:] = torch.cat((paired_levels, paired_levels))
+    else:
+        terrain_names = list(generator_cfg.sub_terrains)
+        envs_per_type = num_envs // len(terrain_names)
+        assigned_columns = []
+        assigned_levels = []
+        for terrain_name in terrain_names:
+            matching_columns = [index for index, name in enumerate(column_names) if name == terrain_name]
+            if not matching_columns:
+                raise RuntimeError(f"no generated columns found for terrain type {terrain_name}")
+            for local_id in range(envs_per_type):
+                assigned_columns.append(matching_columns[local_id % len(matching_columns)])
+                assigned_levels.append((local_id + args_cli.seed) % num_rows)
+        terrain.terrain_types[:] = torch.tensor(assigned_columns, device=device, dtype=torch.long)
+        terrain.terrain_levels[:] = torch.tensor(assigned_levels, device=device, dtype=torch.long)
     terrain.env_origins[:] = terrain.terrain_origins[terrain.terrain_levels, terrain.terrain_types]
     return True
 
@@ -217,7 +259,7 @@ def build_terrain_assignment(env_cfg, raw_env, num_envs: int) -> tuple[list[dict
     """Capture each environment's fixed terrain assignment and its protocol metadata."""
 
     generator_cfg = getattr(env_cfg.scene.terrain, "terrain_generator", None)
-    if args_cli.terrain_protocol != "rough_stratified":
+    if args_cli.terrain_protocol not in {"rough_stratified", "multiterrain_stratified"}:
         assignments = [
             {
                 "terrain_protocol": args_cli.terrain_protocol,
@@ -244,7 +286,7 @@ def build_terrain_assignment(env_cfg, raw_env, num_envs: int) -> tuple[list[dict
     terrain_types = getattr(terrain, "terrain_types", None)
     terrain_levels = getattr(terrain, "terrain_levels", None)
     if generator_cfg is None or terrain_types is None or terrain_levels is None:
-        raise RuntimeError("rough_stratified terrain assignments are unavailable")
+        raise RuntimeError(f"{args_cli.terrain_protocol} terrain assignments are unavailable")
 
     type_indices = [int(value) for value in terrain_types.detach().cpu().tolist()]
     levels = [int(value) for value in terrain_levels.detach().cpu().tolist()]
@@ -286,7 +328,18 @@ def build_terrain_assignment(env_cfg, raw_env, num_envs: int) -> tuple[list[dict
             "class": f"{type(cfg).__module__}.{type(cfg).__name__}",
             "proportion": float(cfg.proportion),
         }
-        for attribute in ("noise_range", "noise_step", "border_width"):
+        for attribute in (
+            "noise_range",
+            "noise_step",
+            "slope_range",
+            "step_height_range",
+            "step_width",
+            "grid_height_range",
+            "grid_width",
+            "platform_width",
+            "border_width",
+            "holes",
+        ):
             if hasattr(cfg, attribute):
                 value = getattr(cfg, attribute)
                 parameters[attribute] = list(value) if isinstance(value, tuple) else value
@@ -310,6 +363,10 @@ def build_terrain_assignment(env_cfg, raw_env, num_envs: int) -> tuple[list[dict
             "First half flat and second half random_rough; paired environment offsets share the "
             "same deterministic level. All levels 0-9 occur in each type, with seed selecting "
             "which levels receive the two extra environments when num_envs=64."
+            if args_cli.terrain_protocol == "rough_stratified"
+            else "Equal environment blocks for all seven ordered terrain types. Within every type, "
+            "environments cycle through that type's generated columns and cover levels 0-9; the "
+            "evaluation scenario seed rotates the level assignment."
         ),
         "sub_terrain_proportions": sub_terrain_proportions,
         "sub_terrain_parameters": sub_terrain_parameters,
@@ -410,7 +467,7 @@ def main() -> None:
     configure_terrain_protocol(env_cfg)
 
     base_env = gym.make(args_cli.task, cfg=env_cfg)
-    if apply_rough_stratification(base_env.unwrapped, args_cli.num_envs):
+    if apply_terrain_stratification(base_env.unwrapped, args_cli.num_envs):
         # The importer initially sampled origins before stratification. Reset once so all robot
         # and sensor states use the explicit paired terrain origins before evaluation starts.
         base_env.reset()
@@ -442,20 +499,22 @@ def main() -> None:
     step_dt = float(raw_env.step_dt)
     terrain_assignments, terrain_metadata = build_terrain_assignment(env_cfg, raw_env, num_envs)
 
-    if args_cli.terrain_protocol == "rough_stratified":
+    if args_cli.terrain_protocol in {"rough_stratified", "multiterrain_stratified"}:
         distribution = terrain_metadata["initial_env_distribution"]
         type_counts = distribution["by_type"]
-        expected_per_type = num_envs // 2
-        if type_counts != {"flat": expected_per_type, "random_rough": expected_per_type}:
+        expected_names = list(env_cfg.scene.terrain.terrain_generator.sub_terrains)
+        expected_per_type = num_envs // len(expected_names)
+        expected_counts = {name: expected_per_type for name in expected_names}
+        if type_counts != expected_counts:
             raise RuntimeError(
-                "rough_stratified did not produce the required 50/50 environment assignment: "
+                f"{args_cli.terrain_protocol} did not produce the required equal assignment: "
                 f"{type_counts}"
             )
         expected_levels = {str(level) for level in range(10)}
         for terrain_type, level_counts in distribution["by_type_and_level"].items():
             if set(level_counts) != expected_levels:
                 raise RuntimeError(
-                    f"rough_stratified did not cover levels 0-9 for {terrain_type}: "
+                    f"{args_cli.terrain_protocol} did not cover levels 0-9 for {terrain_type}: "
                     f"{sorted(level_counts, key=int)}"
                 )
 
@@ -486,6 +545,7 @@ def main() -> None:
         "checkpoint": str(checkpoint),
         "checkpoint_sha256": sha256_file(checkpoint),
         "seed": args_cli.seed,
+        "evaluation_scenario_seed": args_cli.seed,
         "num_envs": num_envs,
         "episodes_per_env": args_cli.episodes_per_env,
         "max_episode_length": env.max_episode_length,
@@ -544,7 +604,7 @@ def main() -> None:
 
             for env_id_tensor in done_ids:
                 env_id = int(env_id_tensor.item())
-                if args_cli.terrain_protocol == "rough_stratified":
+                if args_cli.terrain_protocol in {"rough_stratified", "multiterrain_stratified"}:
                     actual_column = int(raw_env.scene.terrain.terrain_types[env_id].item())
                     actual_level = int(raw_env.scene.terrain.terrain_levels[env_id].item())
                     expected_assignment = terrain_assignments[env_id]
