@@ -311,3 +311,32 @@ git -C /home/kxj/rl_ws/IsaacLab status --short
 ```
 
 默认协作方式：类似读取/只读检查由助手自行运行和分析；需要修改、测试、训练、评估、安装或Git提交时，先向用户说明并取得直接授权，或给出明确终端命令由用户运行并返回完整结果。始终先依据 task、run name、training seed、checkpoint、目录和时间识别run；严格区分 training seed与evaluation scenario seed。
+
+## 13. 2026-08-26 阶段验证视频补充
+
+在用户授权后新增可审计 Demo 录制与合成流程：
+
+```text
+scripts/project/record_go2_multiterrain_demo.py
+scripts/project/record_go2_multiterrain_demo.sh
+scripts/project/record_go2_rough_multitraining_demo.sh
+scripts/project/compose_go2_demo_videos.py
+```
+
+MultiTerrain：training seed 42、`model_2995.pt`、evaluation scenario seed 42、level 5、固定 `vx=0.35 m/s`，七类 terrain 各 300 steps。七段均 exit 0、无 termination。成片：
+
+```text
+evaluation/video_multiterrain_stratified_v0_model2995_evalseed42_2026-08-26/go2_multiterrain_model2995_demo.mp4
+```
+
+时长 43.86 秒，1280×720、50 FPS，SHA-256 `d45508df3e9a92c254dae07c306ca86613fd329cd2fa247189dbc7bb58f324a7`。
+
+Rough：training seeds 42/7/123 各自固定 `model_2999.pt`，evaluation scenario seed 42、`random_rough level 5`、固定 `vx=0.35 m/s`，各 300 steps。三段均 exit 0、无 termination。成片：
+
+```text
+evaluation/video_rough_multitraining_model2999_evalseed42_2026-08-26/go2_rough_multitraining_model2999_demo.mp4
+```
+
+时长 19.94 秒，1280×720、50 FPS，SHA-256 `1ae78d815839376f43fb284a44a854896418c48bd78d0b34c9a9b492678bc50e`。
+
+10/10 原始视频均为 299 frames、约 5.98 秒，metadata、checkpoint/video hash、terrain assignment、training/evaluation seed 和 console fatal/non-finite 审计通过。完整结果见 `doc/RESULTS_GO2_DEMOS_2026-08-26.md`；50 文件 inventory/hash见 `doc/repro/go2_demo_inventory_2026-08-26.txt` 与 `doc/repro/go2_demo_sha256_2026-08-26.txt`。视频仍保留在 Git 忽略的 `evaluation/` 原始位置。
