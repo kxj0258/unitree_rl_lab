@@ -3,6 +3,7 @@
 """Compose audited Go2 terrain clips into labeled portfolio demo videos."""
 
 import argparse
+import csv
 import hashlib
 import json
 from pathlib import Path
@@ -29,6 +30,77 @@ def draw_lines(frame: np.ndarray, lines: list[str]) -> np.ndarray:
         scale = 0.78 if index == 0 else 0.58
         thickness = 2 if index == 0 else 1
         cv2.putText(result, line, (24, 34 + index * 32), cv2.FONT_HERSHEY_SIMPLEX, scale, (255, 255, 255), thickness, cv2.LINE_AA)
+    return result
+
+
+def load_tracking_samples(item: dict) -> list[dict[str, float]]:
+    path = Path(item["tracking_timeseries"])
+    if not path.is_file():
+        raise FileNotFoundError(f"tracking time series not found: {path}")
+    with path.open(newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    if not rows:
+        raise RuntimeError(f"empty tracking time series: {path}")
+    samples = [{key: float(value) for key, value in row.items()} for row in rows]
+    if "cumulative_xy_distance_m" not in samples[0]:
+        distance = 0.0
+        step_dt = float(item["step_dt"])
+        for sample in samples:
+            if not sample["done"]:
+                distance += float(np.hypot(sample["actual_x_mps"], sample["actual_y_mps"])) * step_dt
+            sample["cumulative_xy_distance_m"] = distance
+    terminations = 0
+    for sample in samples:
+        terminations += int(sample["done"])
+        sample["termination_count"] = float(terminations)
+    return samples
+
+
+def draw_dynamic_tracking(
+    frame: np.ndarray,
+    samples: list[dict[str, float]],
+    sample_index: int,
+    velocity_limit: float,
+) -> np.ndarray:
+    result = frame.copy()
+    sample = samples[sample_index]
+    height, width = result.shape[:2]
+    panel_top = max(0, height - 142)
+    overlay = result.copy()
+    cv2.rectangle(overlay, (0, panel_top), (width, height), (0, 0, 0), -1)
+    cv2.addWeighted(overlay, 0.68, result, 0.32, 0.0, result)
+
+    live = (
+        f"t={sample['time_seconds']:5.2f}s  cmd vx={sample['command_x_mps']:+.3f} m/s  "
+        f"actual vx={sample['actual_x_mps']:+.3f} m/s  XY error={sample['xy_error_mps']:.3f} m/s"
+    )
+    cumulative = (
+        f"distance={sample['cumulative_xy_distance_m']:.2f} m  "
+        f"terminations={int(sample['termination_count'])}  "
+        "cyan=command vx  green=actual vx"
+    )
+    cv2.putText(result, live, (18, panel_top + 28), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (255, 255, 255), 1, cv2.LINE_AA)
+    cv2.putText(result, cumulative, (18, panel_top + 53), cv2.FONT_HERSHEY_SIMPLEX, 0.50, (255, 255, 255), 1, cv2.LINE_AA)
+
+    graph_left, graph_right = 20, width - 20
+    graph_top, graph_bottom = panel_top + 66, height - 14
+    def graph_y(value: float) -> int:
+        normalized = np.clip(value / velocity_limit, -1.0, 1.0)
+        return int(graph_bottom - (normalized + 1.0) * 0.5 * (graph_bottom - graph_top))
+
+    zero_y = graph_y(0.0)
+    cv2.line(result, (graph_left, zero_y), (graph_right, zero_y), (125, 125, 125), 1, cv2.LINE_AA)
+    if sample_index > 0:
+        indices = np.arange(sample_index + 1)
+        xs = graph_left + indices * (graph_right - graph_left) / max(1, len(samples) - 1)
+        command_points = np.column_stack(
+            (xs, [graph_y(row["command_x_mps"]) for row in samples[: sample_index + 1]])
+        ).astype(np.int32)
+        actual_points = np.column_stack(
+            (xs, [graph_y(row["actual_x_mps"]) for row in samples[: sample_index + 1]])
+        ).astype(np.int32)
+        cv2.polylines(result, [command_points], False, (255, 220, 0), 2, cv2.LINE_AA)
+        cv2.polylines(result, [actual_points], False, (80, 255, 80), 2, cv2.LINE_AA)
     return result
 
 
@@ -77,18 +149,31 @@ def compose(root: Path, output: Path, title: str) -> dict:
         if not cap.isOpened():
             raise RuntimeError(f"failed to open {item['video']}")
         label = item["terrain_type"].replace("_", " ")
+        samples = load_tracking_samples(item)
+        velocity_limit = max(
+            0.5,
+            max(abs(row["command_x_mps"]) for row in samples),
+            max(abs(row["actual_x_mps"]) for row in samples),
+        ) * 1.10
+        frame_count = max(1, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
         lines = [
             f"{label} | level {item['terrain_level']}",
             f"training seed={item['training_seed']} | evaluation scenario seed={item['evaluation_scenario_seed']}",
             f"post-warmup XY error={item['post_warmup_mean_xy_velocity_error_mps']:.3f} m/s | actual vx={item['post_warmup_mean_actual_x_velocity_mps']:.3f} m/s",
-            f"distance={item['cumulative_xy_distance_m']:.2f} m | terminations={sum(item['terminations'].values())}",
         ]
+        clip_frame_index = 0
         while True:
             ok, frame = cap.read()
             if not ok:
                 break
-            writer.write(draw_lines(frame, lines))
+            sample_index = min(
+                len(samples) - 1,
+                int(clip_frame_index * len(samples) / frame_count),
+            )
+            labeled = draw_lines(frame, lines)
+            writer.write(draw_dynamic_tracking(labeled, samples, sample_index, velocity_limit))
             total_source_frames += 1
+            clip_frame_index += 1
         cap.release()
     writer.release()
     if not output.is_file() or output.stat().st_size == 0:

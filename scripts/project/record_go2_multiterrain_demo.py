@@ -238,6 +238,7 @@ def main() -> None:
             "actual_yaw_radps": float(angular_velocity[0, 2].item()),
             "xy_error_mps": xy_error,
             "yaw_error_radps": yaw_error,
+            "cumulative_xy_distance_m": cumulative_xy_distance,
             "done": int(done),
         }
         samples.append(row)
