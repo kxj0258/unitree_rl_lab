@@ -147,7 +147,7 @@ def main() -> None:
     env_cfg.viewer.origin_type = "asset_root" if args_cli.camera_mode == "asset_follow" else "world"
     env_cfg.viewer.asset_name = "robot"
     env_cfg.viewer.env_index = 0
-    env_cfg.viewer.eye = (5.5, 5.5, 3.0)
+    env_cfg.viewer.eye = (3.0, 3.0, 2.0) if args_cli.camera_mode == "asset_follow" else (5.5, 5.5, 3.0)
     env_cfg.viewer.lookat = (0.0, 0.0, 0.35)
 
     output_dir.mkdir(parents=True)
