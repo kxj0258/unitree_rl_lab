@@ -1,4 +1,4 @@
-# Go2 Flat Baseline 与 Rough 扩展复现说明
+# Go2 Flat、Rough 与 MultiTerrain 扩展复现说明
 
 ## 环境激活
 
@@ -214,6 +214,70 @@ sha256sum --check doc/repro/rough_multitraining_final_artifacts_2026-08-25.sha25
 
 旧 seed-42 rough 归档与新的多 training-seed 归档是追加关系；不要覆盖或删除任意旧 manifest。
 
+## MultiTerrain Stage-2 统一复现入口
+
+本轮成功运行的底层训练、评估、视频脚本均在 `scripts/project/`。过去由终端环境变量拼接的精确 Stage-2 命令现统一固化为：
+
+```text
+scripts/project/reproduce_go2_multiterrain_stage2.sh
+```
+
+该脚本默认只打印命令，不运行昂贵任务。先预览：
+
+```bash
+scripts/project/reproduce_go2_multiterrain_stage2.sh --help
+
+REPRO_TAG=trial1 \
+scripts/project/reproduce_go2_multiterrain_stage2.sh baseline-train
+
+OUTPUT_ROOT=evaluation/repro_stage2_baseline_eval \
+scripts/project/reproduce_go2_multiterrain_stage2.sh baseline-eval
+```
+
+确认路径、training seed、evaluation scenario seed、checkpoint 和输出目录后，显式加入 `EXECUTE=1` 才会运行：
+
+```bash
+EXECUTE=1 REPRO_TAG=trial1 \
+scripts/project/reproduce_go2_multiterrain_stage2.sh baseline-train
+
+EXECUTE=1 OUTPUT_ROOT=evaluation/repro_stage2_baseline_eval \
+scripts/project/reproduce_go2_multiterrain_stage2.sh baseline-eval
+```
+
+可用子命令：
+
+- `baseline-train`：从原 training-seed-42 `model_2995` 续训 survival curriculum 500 iterations；
+- `tracking-train`：从相同 checkpoint 续训 tracking-aware curriculum 500 iterations；
+- `baseline-eval`：入选 baseline `model_3300` × evaluation scenario seeds 7/42/123；
+- `tracking-eval`：tracking-aware `model_3300/3400/3494` × scenario seed 42；
+- `multiterrain-video`：七地形 level-5、`vx=0.35 m/s`、20 秒 asset-follow 原始视频；
+- `rough-video`：Rough training seeds 42/7/123、共同 evaluation scenario seed 42 的同协议视频；
+- `verify-archive`：验证本阶段精选 checkpoint、summary 和最终视频清单。
+
+例如预览七地形视频矩阵：
+
+```bash
+OUTPUT_ROOT=evaluation/new_multiterrain_video \
+scripts/project/reproduce_go2_multiterrain_stage2.sh multiterrain-video
+```
+
+动态成片使用通用脚本，不需要重新运行仿真：
+
+```bash
+python scripts/project/compose_go2_demo_videos.py \
+  --source_root evaluation/<VIDEO_ROOT> \
+  --output evaluation/<VIDEO_ROOT>/<NEW_DEMO_NAME>.mp4 \
+  --title "Unitree Go2 | Dynamic Velocity Tracking | PPO"
+```
+
+本阶段精选产物验证：
+
+```bash
+EXECUTE=1 scripts/project/reproduce_go2_multiterrain_stage2.sh verify-archive
+```
+
+完整路径、指标和训练日志限制见 `RESULTS_MULTITERRAIN_CONTINUATION_2026-08-26.md`。
+
 ## 录制 follow 视频
 
 输出目录必须不存在：
@@ -301,6 +365,7 @@ sha256sum --check doc/repro/rough_evaluation_sha256_2026-08-25.txt
 sha256sum --check doc/repro/rough_final_artifacts_2026-08-25.sha256
 sha256sum --check doc/repro/rough_multitraining_evaluation_sha256_2026-08-25.txt
 sha256sum --check doc/repro/rough_multitraining_final_artifacts_2026-08-25.sha256
+sha256sum --check doc/repro/go2_multiterrain_stage2_final_artifacts_2026-08-26.sha256
 ```
 
 大型模型、视频和评估输出位于本地 `logs/`、`evaluation/`，默认不提交 Git；校验清单和聚合结果保存在 `doc/repro/`。

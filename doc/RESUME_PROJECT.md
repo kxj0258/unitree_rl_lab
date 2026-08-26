@@ -6,7 +6,7 @@
 
 ## 一句话简介
 
-在 Isaac Sim 5.1 / Isaac Lab 2.3.2 中复现 Unitree Go2 速度跟踪策略，完成平地 baseline、50/50 flat/random-rough curriculum 训练、统一分层评估和可复现归档。
+在 Isaac Sim 5.1 / Isaac Lab 2.3.2 中复现 Unitree Go2 速度跟踪策略，完成平地、Rough 多训练 seed、七类 MultiTerrain curriculum、统一分层评估和可复现归档。
 
 ## 中文简历版本
 
@@ -16,6 +16,9 @@
 - 解决 Isaac Sim 5.1、Isaac Lab 2.3.2 与项目代码的依赖及 API 兼容问题，固化训练、评估、视频录制、环境快照和 checksum 流程，并导出 TorchScript/ONNX 策略。
 - 扩展 50% flat / 50% random-uniform rough terrain curriculum，在相同 rough-stratified 协议下将 random-rough XY error 相对 flat control 降低 55.7%，timeout rate 提升 43.23 个百分点。
 - 将 rough 正式训练、12-run 矩阵、1536-episode 审计与 SHA-256 归档固化为可复用脚本，正式选择跨 seed 更稳定的 `model_2900.pt`。
+- 完成 rough training seeds 42/7/123 的独立正式训练与 3456-episode 审计；固定 `model_2999` 的 random-rough XY error 为 0.1131 ± 0.0013 m/s。
+- 构建七类 MultiTerrain 与 140-episode 分层协议，比较 survival/tracking-aware 两条受控续训分支；选择 baseline `model_3300`，跨 evaluation scenario seeds 的 XY error 为 0.272 ± 0.010 m/s，并将 tracking-aware 作为负结果归档。
+- 制作带动态 command/actual vx 曲线、误差、累计位移和 termination 的七地形及三 training-seed 可审计 Demo。
 
 如果简历空间有限，优先保留训练规模、统一评估、rough 改进和可复现自动化四类信息。
 
@@ -27,6 +30,8 @@
 - Resolved Isaac Sim 5.1 / Isaac Lab 2.3.2 compatibility issues, automated reproducibility snapshots and artifact checksums, and exported the policy to TorchScript and ONNX.
 - Extended training to a 50/50 flat/random-uniform rough-terrain curriculum; reduced random-rough XY tracking error by 55.7% and improved 20-second completion by 43.23 percentage points versus the flat-trained control under the same protocol.
 - Automated the rough training wrapper, 12-run stratified matrix, 1,536-episode audit, and immutable checksum manifests; selected `model_2900.pt` for lower tracking error, action variation, power proxy, and cross-scenario variance.
+- Completed independent rough training seeds 42/7/123 and a 3,456-episode audit; achieved 0.1131 ± 0.0013 m/s random-rough XY error in the fixed-iteration comparison.
+- Built a seven-type MultiTerrain task and 140-episode stratified protocol; compared survival and tracking-aware continuations, selected baseline `model_3300`, and documented the tracking-aware branch as a negative result.
 
 ## 面试展开结构
 
@@ -52,12 +57,12 @@
 
 ### 5. 当前项目边界是什么？
 
-当前完成了 flat baseline 和 50/50 flat/random-uniform rough 扩展，但训练都只使用 seed 42；三个 seed 是评估场景 seed。Stairs/boxes/slopes、任意复杂地形泛化、多训练 seed、MuJoCo Sim2Sim 和 Sim2Real 尚未完成，面试时不应扩大表述。
+当前已完成 flat baseline、50/50 flat/random-uniform rough 的 training seeds 42/7/123，以及单 training-seed 的七类 MultiTerrain 原型。MultiTerrain 在 stairs/boxes/inverted terrain 上仍明显降速，不能表述为任意复杂地形高速泛化。MuJoCo Sim2Sim、Sim2Real 和实机部署尚未完成。
 
 ## 下一阶段可讲的改进方向
 
-1. 增加多训练 seed，量化 flat/rough 策略的训练方差；
-2. 扩展 stairs/boxes/slopes 并为不同地形设计独立协议；
+1. 为 MultiTerrain 增加独立 training seeds，量化训练方差；
+2. 解耦 command/terrain curriculum，并针对 stairs/boxes 做受控消融；
 3. 做 reward、扰动、观测噪声和 domain randomization 消融；
 4. 使用 ONNX 在 MuJoCo 中完成 Sim2Sim 回归；
 5. 评估控制频率、延迟、摩擦和质量扰动敏感性，为后续 Sim2Real 做准备。
@@ -65,7 +70,7 @@
 ## 不应使用的夸大表述
 
 - 不写“完成任意复杂地形泛化”；当前 rough 只覆盖 random-uniform height noise。
-- 不写“完成多 seed 训练”；当前只有训练 seed 42。
+- 不把 Rough 的多 training-seed 结果外推为 MultiTerrain 多 training-seed 泛化。
 - 不写“实现多机器人避碰”；grid 视频只是克隆环境展示。
 - 不把机械功率代理写成真实电池功耗。
 - 不写“完成实机部署”或“完成 Sim2Real”。

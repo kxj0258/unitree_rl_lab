@@ -1,6 +1,6 @@
 # Unitree Go2 RL 项目状态
 
-更新时间：2026-08-25
+更新时间：2026-08-26
 
 ## 项目目标
 
@@ -14,7 +14,7 @@
 - PyTorch 2.7.0+cu128
 - Torchvision 0.22.0+cu128
 - Isaac Sim 5.1.0.0
-- Isaac Lab v2.3.2，commit `37ddf626871758333d6ed89cf64ad702aef127d0`
+- Isaac Lab v2.3.2，当前兼容工作树基线 commit `39b494e6d8ae3f7adbb30ae1feaf45d21bdc7d19`
 - Unitree RL Lab upstream baseline commit `4960b84732b0c2ec593dccbfe963fda1bcd7b1e3`
 - Go2 rough task commit `dea17cc`
 - Rough stratified evaluator commit `61843d8`
@@ -107,6 +107,21 @@ SHA-256:   9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
 - 固定 `model_2999`：overall XY `0.0956 ± 0.0009 m/s`，rough XY `0.1131 ± 0.0013 m/s`，timeout `1144/1152`；
 - 完整结果见 `RESULTS_ROUGH_MULTITRAINING.md`。
 
+## MultiTerrain 七地形阶段：已完成原型、续训对照与长视频
+
+- 新增 `Unitree-Go2-Velocity-MultiTerrain`，覆盖 flat、random rough、正/倒 slope、正/倒 stairs、boxes；
+- 10 × 20 terrain grid、level 0--9，保持 45 维 policy observation，不使用 height scan；
+- 实现 `multiterrain_stratified` 固定协议：70 environments × 2 episodes，七类地形和十个 level 全覆盖；
+- 从 training-seed-42 `model_2995.pt` 分叉完成 survival baseline 与 tracking-aware 各 500 iterations；
+- 正式选择 survival baseline `model_3300.pt`，不是最终 `model_3494.pt`；
+- evaluation scenario seed 42：XY error 0.270 m/s、yaw error 0.178 rad/s、timeout 83.6%；
+- scenario seeds 7/42/123：XY error 0.272 ± 0.010 m/s、timeout 79.3% ± 4.3 pp；
+- tracking-aware 分支没有超过 baseline，作为受控负结果保留；
+- 完成七地形 20 秒动态遥测成片，以及 Rough 三 training-seed 20 秒动态遥测成片；
+- 完整结果见 `RESULTS_MULTITERRAIN_CONTINUATION_2026-08-26.md`。
+
+当前局限：MultiTerrain 在 flat 上接近命令速度，但在 stairs、boxes、inverted terrain 上明显保守降速，pyramid stairs 固定 clip 出现一次 bad-orientation。不能宣称所有复杂地形均实现高速精确跟踪。
+
 ## 兼容修改
 
 ### Isaac Lab
@@ -125,6 +140,10 @@ SHA-256:   9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
 - `scripts/project/evaluate_go2_rough_training_seed_matrix.sh`：明确区分 training/evaluation seed 的单 training-seed 9-run 矩阵。
 - `scripts/project/audit_go2_rough_multitraining.py`：27-run 多 training-seed 审计及 selected/fixed 聚合。
 - `scripts/project/archive_go2_rough_multitraining.py`：追加式六文件多 training-seed 归档。
+- `scripts/project/train_go2_multiterrain.sh`：survival/tracking-aware 两个 MultiTerrain 训练变体及 resume 安全检查。
+- `scripts/project/reproduce_go2_multiterrain_stage2.sh`：默认 dry-run 的 Stage-2 精确训练、评估、视频和归档编排入口。
+- `scripts/project/record_go2_multiterrain_demo.py`：逐步 tracking CSV、真实位移、固定/跟随相机和 SHA-256 metadata。
+- `scripts/project/compose_go2_demo_videos.py`：动态 command/actual vx 曲线及实时误差/位移成片。
 
 ## 视频说明
 
@@ -134,7 +153,9 @@ SHA-256:   9afefda4777569ed120419a83c40d2a487cdc4be862ac16c7bd9ab6fb45c2889
 
 ## 下一阶段计划
 
-1. 设计 terrain curriculum、扰动、观测噪声和 reward 消融，每次只改变一个因素。
-2. 逐项扩展 stairs、boxes、slopes，并为每类新增地形定义独立评估协议。
-3. 完成 rough 正式视频、ONNX 导出与 MuJoCo Sim2Sim 回归。
+1. 解耦 command curriculum 与 terrain curriculum，避免两种难度同时升级。
+2. 针对 stairs、boxes 做 terrain-aware sampling、失败回放和 reward 受控消融。
+3. 使用 survival baseline `model_3300` 和同一固定协议比较候选，不无目标追加 iterations。
+4. 制作 30--45 秒作品集 highlight；当前长版保留为完整证据。
+5. 完成 ONNX/MuJoCo Sim2Sim 回归。
 4. 在完成 Sim2Sim 与安全审查后再讨论 Sim2Real；当前不宣称实机部署。

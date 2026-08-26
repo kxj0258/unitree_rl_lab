@@ -60,6 +60,19 @@ Official rough checkpoint: `model_2900.pt` (`SHA-256: 9afefda4777569ed120419a83c
 
 The follow-up multi-training-seed stage completed the same formal budget for training seeds 42, 7, and 123. The fixed `model_2999` comparison across those three seeds achieved 0.0956 ± 0.0009 m/s overall XY error, 0.1131 ± 0.0013 m/s random-rough XY error, and 1144/1152 timeouts. The uncertainty is sample standard deviation across independent training seeds. This still covers only flat/random-uniform rough terrain; it does not establish stairs, boxes, slopes, general complex-terrain, Sim2Sim, or real-robot performance.
 
+## Go2 Seven-Type MultiTerrain Stage
+
+The current stage adds `Unitree-Go2-Velocity-MultiTerrain`, covering flat, random rough, positive/inverted slopes, positive/inverted stairs, and boxes with terrain levels 0--9. A fixed `multiterrain_stratified` protocol evaluates all seven types and ten levels with 140 episodes per checkpoint.
+
+Starting from training-seed-42 `model_2995`, two controlled 500-iteration continuations were compared: the original survival curriculum and a tracking-aware curriculum variant. The selected survival `model_3300.pt` achieved 0.270 m/s XY error and an 83.6% timeout rate at evaluation scenario seed 42. Across scenario seeds 7/42/123 it achieved 0.272 ± 0.010 m/s XY error and a 79.3% ± 4.3 percentage-point timeout rate. The tracking-aware branch did not improve the combined tracking/survival trade-off and is retained as a documented negative result.
+
+Two audited dynamic portfolio videos are available locally under Git-ignored `evaluation/`:
+
+- seven-terrain MultiTerrain video: 141.86 s, SHA-256 `5b64a6722651b33977048453c57f20017c39754985c45ad13a41ccbbe9f93939`;
+- three-training-seed Rough video: 61.94 s, SHA-256 `3114114451694c63535542d79340dfb7e4328e89189622e018ab45ed51972b42`.
+
+The MultiTerrain policy tracks well on flat terrain but slows substantially on stairs, boxes, and inverted terrain. It demonstrates broad coverage and a reproducible evaluation workflow, not solved high-speed traversal on every terrain.
+
 Project documentation:
 
 - [Current project status](doc/PROJECT_STATUS.md)
@@ -67,8 +80,10 @@ Project documentation:
 - [Baseline results](doc/RESULTS_BASELINE.md)
 - [Rough-terrain results](doc/RESULTS_ROUGH.md)
 - [Rough multi-training-seed results](doc/RESULTS_ROUGH_MULTITRAINING.md)
+- [MultiTerrain continuation and dynamic demo results](doc/RESULTS_MULTITERRAIN_CONTINUATION_2026-08-26.md)
+- [Command-to-script reproducibility audit](doc/COMMAND_SCRIPT_AUDIT_2026-08-26.md)
 - [Resume and interview notes](doc/RESUME_PROJECT.md)
-- [Latest session handoff](doc/SESSION_HANDOFF_2026-08-25_ROUGH_MULTITRAINING_FINAL.md)
+- [Latest MultiTerrain session handoff](doc/SESSION_HANDOFF_2026-08-25_MULTITERRAIN_PROTOTYPE.md)
 - [Evaluation artifact manifest](evaluation/README.md)
 
 Reusable commands:
@@ -79,6 +94,13 @@ scripts/project/train_go2_baseline.sh
 
 # Train the recorded 50/50 rough task defaults
 scripts/project/train_go2_rough.sh
+
+# Preview the exact archived MultiTerrain Stage-2 workflow (safe dry-run)
+OUTPUT_ROOT=evaluation/new_stage2_eval \
+scripts/project/reproduce_go2_multiterrain_stage2.sh baseline-eval
+
+# Verify selected Stage-2 checkpoints, summaries, and videos
+EXECUTE=1 scripts/project/reproduce_go2_multiterrain_stage2.sh verify-archive
 
 # Analyze a TensorBoard run
 scripts/project/analyze_tensorboard.py logs/rsl_rl/unitree_go2_velocity/<RUN_DIRECTORY>
