@@ -340,3 +340,25 @@ evaluation/video_rough_multitraining_model2999_evalseed42_2026-08-26/go2_rough_m
 时长 19.94 秒，1280×720、50 FPS，SHA-256 `1ae78d815839376f43fb284a44a854896418c48bd78d0b34c9a9b492678bc50e`。
 
 10/10 原始视频均为 299 frames、约 5.98 秒，metadata、checkpoint/video hash、terrain assignment、training/evaluation seed 和 console fatal/non-finite 审计通过。完整结果见 `doc/RESULTS_GO2_DEMOS_2026-08-26.md`；50 文件 inventory/hash见 `doc/repro/go2_demo_inventory_2026-08-26.txt` 与 `doc/repro/go2_demo_sha256_2026-08-26.txt`。视频仍保留在 Git 忽略的 `evaluation/` 原始位置。
+
+## 14. 2026-08-26 MultiTerrain 续训与长视频最终补充
+
+第 11 节中“补正式视频、多 evaluation scenario seeds、受控消融”已经部分完成：
+
+- 原 survival curriculum 从原 `model_2995.pt` 续训 500 iterations；
+- 独立 tracking-aware curriculum 从同一 checkpoint 续训 500 iterations；
+- 固定 `multiterrain_stratified` 协议比较 5 个新候选；
+- 入选 baseline `model_3300.pt`，并补 evaluation scenario seeds 7/42/123；
+- 完成 MultiTerrain 七地形 20 秒动态遥测成片；
+- 完成 Rough 三 training-seed 20 秒动态遥测成片。
+
+最终结论、精确指标、已知训练日志限制、视频路径和下一阶段路线见：
+
+```text
+doc/RESULTS_MULTITERRAIN_CONTINUATION_2026-08-26.md
+doc/repro/go2_multiterrain_stage2_final_artifacts_2026-08-26.sha256
+```
+
+当前 MultiTerrain 首选 checkpoint 是 survival baseline run 的 `model_3300.pt`，training seed 42；不要误选最终 `model_3494.pt`。后者跟踪误差略低但存活明显更差。tracking-aware 分支是有效负结果，不应删除或包装为性能提升。
+
+下一阶段优先做 command/terrain curriculum 解耦和 boxes/stairs 受控消融；所有选择继续使用同一固定协议。训练、评估和录制命令由用户在终端运行并返回输出，助手负责代码、命令、只读审计与结果分析。MuJoCo 仍未安装或克隆，且禁止升级/重装 NVIDIA 驱动、Isaac Sim、Isaac Lab、PyTorch。
