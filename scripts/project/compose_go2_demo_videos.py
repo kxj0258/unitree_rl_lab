@@ -61,10 +61,11 @@ def compose(root: Path, output: Path, title: str) -> dict:
     command_x = items[0]["command"]["lin_vel_x"]
     scenario_seed = items[0]["evaluation_scenario_seed"]
     seconds_per_clip = items[0]["simulated_seconds"]
+    camera_mode = items[0].get("camera", {}).get("mode", "legacy")
     intro_lines = [
         title,
         f"Fixed level 5 | command vx={command_x:.2f} m/s | {seconds_per_clip:.0f} s/clip | evaluation scenario seed={scenario_seed}",
-        "Fixed scene camera; raw clips, time series, metadata and SHA-256 are preserved",
+        f"camera={camera_mode}; raw clips, time series, metadata and SHA-256 are preserved",
     ]
     intro = draw_lines(intro, intro_lines)
     for _ in range(round(fps * 2.0)):

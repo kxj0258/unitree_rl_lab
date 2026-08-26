@@ -44,6 +44,12 @@ parser.add_argument("--output_dir", required=True, help="New per-terrain output 
 parser.add_argument("--command_x", type=float, default=0.35)
 parser.add_argument("--command_y", type=float, default=0.0)
 parser.add_argument("--command_yaw", type=float, default=0.0)
+parser.add_argument(
+    "--camera_mode",
+    choices=("terrain_fixed", "asset_follow"),
+    default="terrain_fixed",
+    help="Fixed camera centered on the assigned terrain origin, or guaranteed robot-follow camera.",
+)
 parser.add_argument("--disable_fabric", action="store_true")
 cli_args.add_rsl_rl_args(parser)
 AppLauncher.add_app_launcher_args(parser)
@@ -138,7 +144,8 @@ def main() -> None:
     ranges.lin_vel_y = (args_cli.command_y, args_cli.command_y)
     ranges.ang_vel_z = (args_cli.command_yaw, args_cli.command_yaw)
     ranges.heading = None
-    env_cfg.viewer.origin_type = "env"
+    env_cfg.viewer.origin_type = "asset_root" if args_cli.camera_mode == "asset_follow" else "world"
+    env_cfg.viewer.asset_name = "robot"
     env_cfg.viewer.env_index = 0
     env_cfg.viewer.eye = (5.5, 5.5, 3.0)
     env_cfg.viewer.lookat = (0.0, 0.0, 0.35)
@@ -159,6 +166,17 @@ def main() -> None:
     terrain.terrain_levels[:] = args_cli.terrain_level
     terrain.env_origins[:] = terrain.terrain_origins[terrain.terrain_levels, terrain.terrain_types]
     base_env.reset()
+
+    robot_start = raw_env.scene["robot"].data.root_pos_w[0].detach().cpu().tolist()
+    if args_cli.camera_mode == "terrain_fixed":
+        camera_eye = [robot_start[0] + 3.0, robot_start[1] + 5.0, robot_start[2] + 2.3]
+        camera_target = [robot_start[0] + 1.5, robot_start[1], robot_start[2] - 0.15]
+        raw_env.sim.set_camera_view(eye=camera_eye, target=camera_target)
+    else:
+        camera_eye = list(env_cfg.viewer.eye)
+        camera_target = list(env_cfg.viewer.lookat)
+    print(f"[DEMO] robot_start_world={robot_start}")
+    print(f"[DEMO] camera_mode={args_cli.camera_mode} eye={camera_eye} target={camera_target}")
 
     video_dir = output_dir / "video"
     base_env = gym.wrappers.RecordVideo(
@@ -250,6 +268,8 @@ def main() -> None:
         "terrain_type": args_cli.terrain_type,
         "terrain_column": terrain_column,
         "terrain_level": args_cli.terrain_level,
+        "robot_start_world": robot_start,
+        "camera": {"mode": args_cli.camera_mode, "eye": camera_eye, "target": camera_target},
         "command": {"lin_vel_x": args_cli.command_x, "lin_vel_y": args_cli.command_y, "ang_vel_z": args_cli.command_yaw},
         "video_steps": args_cli.video_length,
         "warmup_steps": args_cli.warmup_steps,

@@ -10,6 +10,7 @@ TERRAIN_LEVEL="${TERRAIN_LEVEL:-5}"
 VIDEO_LENGTH="${VIDEO_LENGTH:-1000}"
 WARMUP_STEPS="${WARMUP_STEPS:-100}"
 COMMAND_X="${COMMAND_X:-0.20}"
+CAMERA_MODE="${CAMERA_MODE:-terrain_fixed}"
 DEVICE="${DEVICE:-cuda:0}"
 PYTHON_EXE="${PYTHON_EXE:-/home/kxj/miniforge3/envs/unitree_rl/bin/python}"
 
@@ -42,6 +43,7 @@ for terrain in "${terrains[@]}"; do
         --video_length "$VIDEO_LENGTH" \
         --warmup_steps "$WARMUP_STEPS" \
         --command_x "$COMMAND_X" \
+        --camera_mode "$CAMERA_MODE" \
         --output_dir "$output_dir" \
         --device "$DEVICE" \
         2>&1 | tee "$console_log"
