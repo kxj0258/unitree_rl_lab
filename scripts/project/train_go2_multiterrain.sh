@@ -9,8 +9,9 @@ EXPERIMENT_NAME="unitree_go2_velocity_multiterrain"
 case "$TASK_VARIANT" in
     survival) TASK="Unitree-Go2-Velocity-MultiTerrain" ;;
     tracking_aware) TASK="Unitree-Go2-Velocity-MultiTerrain-TrackingAware" ;;
+    height_scan) TASK="Unitree-Go2-Velocity-MultiTerrain-HeightScan" ;;
     *)
-        echo "TASK_VARIANT must be survival or tracking_aware: $TASK_VARIANT" >&2
+        echo "TASK_VARIANT must be survival, tracking_aware, or height_scan: $TASK_VARIANT" >&2
         exit 2
         ;;
 esac
@@ -54,7 +55,7 @@ Defaults:
   GPU_POLL_SECONDS=5
   RESUME_RUN=                 # existing run directory name; requires RESUME_CHECKPOINT
   RESUME_CHECKPOINT=          # checkpoint filename; requires RESUME_RUN
-  TASK_VARIANT=survival       # survival or tracking_aware
+  TASK_VARIANT=survival       # survival, tracking_aware, or height_scan
 
 Examples:
   RUN_STAGE=smoke NUM_ENVS=64 MAX_ITERATIONS=5 scripts/project/train_go2_multiterrain.sh
@@ -116,7 +117,10 @@ if [[ -n "$RESUME_RUN" || -n "$RESUME_CHECKPOINT" ]]; then
         echo "Resume checkpoint not found: $resume_path" >&2
         exit 1
     fi
-    resume_args=(--resume --load_run "$RESUME_RUN" --checkpoint "$RESUME_CHECKPOINT")
+    # Isaac Lab resolves --checkpoint as a regular expression. Anchor and
+    # escape dots so checksum/metadata sidecars cannot be selected instead.
+    resume_checkpoint_regex="^${RESUME_CHECKPOINT//./\\.}$"
+    resume_args=(--resume --load_run "^${RESUME_RUN}$" --checkpoint "$resume_checkpoint_regex")
 else
     resume_args=()
 fi

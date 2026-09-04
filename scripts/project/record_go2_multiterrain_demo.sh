@@ -4,6 +4,7 @@ set -Eeuo pipefail
 PROJECT_DIR="${UNITREE_RL_LAB_PATH:-/home/kxj/rl_ws/unitree_rl_lab}"
 CHECKPOINT="${CHECKPOINT:-${PROJECT_DIR}/logs/rsl_rl/unitree_go2_velocity_multiterrain/2026-08-25_22-53-12_multiterrain_v3_challenging_noheightscan_prototype_resume_from2396_seed42_env1024_addi600_totalapprox3000/model_2995.pt}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-${PROJECT_DIR}/evaluation/video_multiterrain_stratified_v0_model2995_evalseed42_2026-08-26}"
+TASK="${TASK:-Unitree-Go2-Velocity-MultiTerrain}"
 EVALUATION_SEED="${EVALUATION_SEED:-42}"
 TRAINING_SEED="${TRAINING_SEED:-42}"
 TERRAIN_LEVEL="${TERRAIN_LEVEL:-5}"
@@ -34,7 +35,7 @@ for terrain in "${terrains[@]}"; do
     output_dir="${OUTPUT_ROOT}/${terrain}_level${TERRAIN_LEVEL}"
     console_log="${OUTPUT_ROOT}/${terrain}_level${TERRAIN_LEVEL}.console.log"
     "$PYTHON_EXE" scripts/project/record_go2_multiterrain_demo.py \
-        --task Unitree-Go2-Velocity-MultiTerrain \
+        --task "$TASK" \
         --checkpoint "$CHECKPOINT" \
         --terrain_type "$terrain" \
         --terrain_level "$TERRAIN_LEVEL" \

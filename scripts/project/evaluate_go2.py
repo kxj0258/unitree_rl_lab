@@ -6,6 +6,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import sys
 import time
 from collections import Counter, defaultdict
@@ -26,12 +27,26 @@ parser.add_argument("--num_envs", type=int, default=64, help="Parallel evaluatio
 parser.add_argument("--seed", type=int, default=42, help="Environment seed.")
 parser.add_argument(
     "--terrain_protocol",
-    choices=("legacy", "rough_stratified", "multiterrain_stratified"),
+    choices=(
+        "legacy",
+        "rough_stratified",
+        "multiterrain_stratified",
+        "v5_foundation_stratified",
+        "v5_stairs_stratified",
+        "v5_boxes_stratified",
+        "teacher_v1_stratified",
+        "teacher_v2_stratified",
+        "teacher_v3_stratified",
+    ),
     default="legacy",
     help=(
         "Terrain evaluation protocol. 'legacy' preserves the original randomized-terrain "
         "evaluation behavior; 'rough_stratified' uses the fixed 10x20 Go2 rough grid; "
-        "'multiterrain_stratified' covers all levels of all seven Go2 MultiTerrain types."
+        "'multiterrain_stratified' covers all levels of all seven Go2 MultiTerrain types; "
+        "'v5_foundation_stratified' covers all eight levels of the four v5 foundation terrains; "
+        "'v5_stairs_stratified' covers all eight levels of the two rehearsal and two stairs terrains; "
+        "'v5_boxes_stratified' evaluates only boxes while covering all eight levels."
+        " 'teacher_v1_stratified' covers all ten levels of one Terrain Teacher v1 task."
     ),
 )
 parser.add_argument("--disable_fabric", action="store_true", help="Disable Fabric and use USD I/O.")
@@ -45,6 +60,27 @@ parser.add_argument(
     default=None,
     help="Safety limit for vector steps. Default: 3 * episodes_per_env * max_episode_length.",
 )
+parser.add_argument("--fixed_command_x", type=float, default=None, help="Fix commanded body-frame x velocity.")
+parser.add_argument("--fixed_command_y", type=float, default=None, help="Fix commanded body-frame y velocity.")
+parser.add_argument("--fixed_command_yaw", type=float, default=None, help="Fix commanded yaw rate.")
+parser.add_argument(
+    "--fixed_heading",
+    type=float,
+    default=None,
+    help="Use heading feedback toward this fixed world-frame yaw instead of a fixed yaw-rate command.",
+)
+parser.add_argument(
+    "--fixed_relative_heading",
+    type=float,
+    default=None,
+    help="Lock a Teacher v2 heading target relative to yaw at command resampling.",
+)
+parser.add_argument(
+    "--fixed_initial_yaw",
+    type=float,
+    default=None,
+    help="Fix the reset yaw for every evaluation episode.",
+)
 cli_args.add_rsl_rl_args(parser)
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
@@ -57,6 +93,23 @@ if args_cli.num_envs <= 0:
     parser.error("--num_envs must be positive")
 if args_cli.episodes_per_env <= 0:
     parser.error("--episodes_per_env must be positive")
+fixed_command_values = (args_cli.fixed_command_x, args_cli.fixed_command_y, args_cli.fixed_command_yaw)
+if any(value is not None for value in fixed_command_values) and not all(
+    value is not None for value in fixed_command_values
+):
+    parser.error("--fixed_command_x, --fixed_command_y, and --fixed_command_yaw must be provided together")
+if any(value is not None and not math.isfinite(value) for value in fixed_command_values):
+    parser.error("fixed command values must be finite")
+if args_cli.fixed_heading is not None and not math.isfinite(args_cli.fixed_heading):
+    parser.error("--fixed_heading must be finite")
+if args_cli.fixed_initial_yaw is not None and not math.isfinite(args_cli.fixed_initial_yaw):
+    parser.error("--fixed_initial_yaw must be finite")
+if args_cli.fixed_relative_heading is not None and not math.isfinite(args_cli.fixed_relative_heading):
+    parser.error("--fixed_relative_heading must be finite")
+if args_cli.fixed_heading is not None and args_cli.fixed_relative_heading is not None:
+    parser.error("--fixed_heading and --fixed_relative_heading are mutually exclusive")
+if args_cli.fixed_heading is not None and args_cli.fixed_command_yaw not in {None, 0.0}:
+    parser.error("--fixed_command_yaw must be 0 when --fixed_heading is used")
 if args_cli.terrain_protocol == "rough_stratified":
     if args_cli.task != "Unitree-Go2-Velocity-Rough":
         parser.error("--terrain_protocol rough_stratified requires --task Unitree-Go2-Velocity-Rough")
@@ -65,15 +118,101 @@ if args_cli.terrain_protocol == "rough_stratified":
     if args_cli.seed < 0:
         parser.error("rough_stratified requires a non-negative --seed")
 if args_cli.terrain_protocol == "multiterrain_stratified":
-    if args_cli.task != "Unitree-Go2-Velocity-MultiTerrain":
+    if args_cli.task not in {
+        "Unitree-Go2-Velocity-MultiTerrain",
+        "Unitree-Go2-Velocity-MultiTerrain-HeightScan",
+        "Unitree-Go2-Velocity-ProxyStudent-HeightScan",
+    }:
         parser.error(
             "--terrain_protocol multiterrain_stratified requires "
-            "--task Unitree-Go2-Velocity-MultiTerrain"
+            "--task Unitree-Go2-Velocity-MultiTerrain or "
+            "Unitree-Go2-Velocity-MultiTerrain-HeightScan or "
+            "Unitree-Go2-Velocity-ProxyStudent-HeightScan"
         )
     if args_cli.num_envs < 70 or args_cli.num_envs % 70:
         parser.error("multiterrain_stratified requires --num_envs to be a positive multiple of 70")
     if args_cli.seed < 0:
         parser.error("multiterrain_stratified requires a non-negative --seed")
+if args_cli.terrain_protocol == "v5_foundation_stratified":
+    if args_cli.task != "Unitree-Go2-Velocity-V5-Foundation":
+        parser.error(
+            "--terrain_protocol v5_foundation_stratified requires "
+            "--task Unitree-Go2-Velocity-V5-Foundation"
+        )
+    if args_cli.num_envs < 32 or args_cli.num_envs % 32:
+        parser.error("v5_foundation_stratified requires --num_envs to be a positive multiple of 32")
+    if args_cli.seed < 0:
+        parser.error("v5_foundation_stratified requires a non-negative --seed")
+if args_cli.terrain_protocol == "v5_stairs_stratified":
+    if args_cli.task != "Unitree-Go2-Velocity-V5-Stairs-Specialist":
+        parser.error(
+            "--terrain_protocol v5_stairs_stratified requires "
+            "--task Unitree-Go2-Velocity-V5-Stairs-Specialist"
+        )
+    if args_cli.num_envs < 32 or args_cli.num_envs % 32:
+        parser.error("v5_stairs_stratified requires --num_envs to be a positive multiple of 32")
+    if args_cli.seed < 0:
+        parser.error("v5_stairs_stratified requires a non-negative --seed")
+if args_cli.terrain_protocol == "v5_boxes_stratified":
+    if args_cli.task not in {
+        "Unitree-Go2-Velocity-V5-Boxes-Specialist",
+        "Unitree-Go2-Velocity-V5-Boxes-Mixed-Command-Remediation",
+        "Unitree-Go2-Velocity-V5-Boxes-Safety-Remediation",
+    }:
+        parser.error(
+            "--terrain_protocol v5_boxes_stratified requires "
+            "--task Unitree-Go2-Velocity-V5-Boxes-Specialist or "
+            "Unitree-Go2-Velocity-V5-Boxes-Mixed-Command-Remediation or "
+            "Unitree-Go2-Velocity-V5-Boxes-Safety-Remediation"
+        )
+    if args_cli.num_envs < 8 or args_cli.num_envs % 8:
+        parser.error("v5_boxes_stratified requires --num_envs to be a positive multiple of 8")
+    if args_cli.seed < 0:
+        parser.error("v5_boxes_stratified requires a non-negative --seed")
+if args_cli.terrain_protocol == "teacher_v1_stratified":
+    teacher_v1_tasks = {
+        "Unitree-Go2-Velocity-TeacherV1-Flat",
+        "Unitree-Go2-Velocity-TeacherV1-RandomRough",
+        "Unitree-Go2-Velocity-TeacherV1-PyramidSlope",
+        "Unitree-Go2-Velocity-TeacherV1-InvertedPyramidSlope",
+        "Unitree-Go2-Velocity-TeacherV1-PyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV1-InvertedPyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV1-Boxes",
+    }
+    if args_cli.task not in teacher_v1_tasks:
+        parser.error("--terrain_protocol teacher_v1_stratified requires a Terrain Teacher v1 task")
+    if args_cli.num_envs < 10 or args_cli.num_envs % 10:
+        parser.error("teacher_v1_stratified requires --num_envs to be a positive multiple of 10")
+    if args_cli.seed < 0:
+        parser.error("teacher_v1_stratified requires a non-negative --seed")
+if args_cli.terrain_protocol == "teacher_v2_stratified":
+    teacher_v2_tasks = {
+        "Unitree-Go2-Velocity-TeacherV2-Flat",
+        "Unitree-Go2-Velocity-TeacherV2-RandomRough",
+        "Unitree-Go2-Velocity-TeacherV2-PyramidSlope",
+        "Unitree-Go2-Velocity-TeacherV2-InvertedPyramidSlope",
+        "Unitree-Go2-Velocity-TeacherV2-PyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV2-InvertedPyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV2-Boxes",
+    }
+    if args_cli.task not in teacher_v2_tasks:
+        parser.error("--terrain_protocol teacher_v2_stratified requires a Terrain Teacher v2 task")
+    if args_cli.num_envs < 10 or args_cli.num_envs % 10:
+        parser.error("teacher_v2_stratified requires --num_envs to be a positive multiple of 10")
+    if args_cli.seed < 0:
+        parser.error("teacher_v2_stratified requires a non-negative --seed")
+if args_cli.terrain_protocol == "teacher_v3_stratified":
+    teacher_v3_tasks = {
+        "Unitree-Go2-Velocity-TeacherV3-PyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV3-InvertedPyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV3-Boxes",
+    }
+    if args_cli.task not in teacher_v3_tasks:
+        parser.error("--terrain_protocol teacher_v3_stratified requires a Terrain Teacher v3 task")
+    if args_cli.num_envs < 10 or args_cli.num_envs % 10:
+        parser.error("teacher_v3_stratified requires --num_envs to be a positive multiple of 10")
+    if args_cli.seed < 0:
+        parser.error("teacher_v3_stratified requires a non-negative --seed")
 
 output_dir = Path(args_cli.output_dir).expanduser().resolve()
 if output_dir.exists():
@@ -111,6 +250,19 @@ EPISODE_FIELDS = [
     "rmse_yaw_velocity_error_radps",
     "mean_command_xy_speed_mps",
     "mean_command_abs_yaw_rate_radps",
+    "mean_abs_heading_error_rad",
+    "rmse_heading_error_rad",
+    "final_abs_heading_error_rad",
+    "heading_within_5deg_fraction",
+    "heading_within_10deg_fraction",
+    "heading_within_15deg_fraction",
+    "mean_target_heading_progress_mps",
+    "target_heading_distance_m",
+    "mean_command_aligned_progress_mps",
+    "command_aligned_distance_m",
+    "integrated_planar_displacement_m",
+    "planar_path_length_m",
+    "stall_fraction",
     "mean_action_delta_l2",
     "mean_mechanical_power_w",
     "mechanical_energy_j",
@@ -150,7 +302,16 @@ def configure_terrain_protocol(env_cfg) -> None:
     terrain_cfg = env_cfg.scene.terrain
     generator_cfg = getattr(terrain_cfg, "terrain_generator", None)
     if generator_cfg is None:
-        if args_cli.terrain_protocol in {"rough_stratified", "multiterrain_stratified"}:
+        if args_cli.terrain_protocol in {
+            "rough_stratified",
+            "multiterrain_stratified",
+            "v5_foundation_stratified",
+            "v5_stairs_stratified",
+            "v5_boxes_stratified",
+            "teacher_v1_stratified",
+            "teacher_v2_stratified",
+            "teacher_v3_stratified",
+        }:
             raise ValueError(f"{args_cli.terrain_protocol} requires a terrain generator")
         return
 
@@ -162,7 +323,7 @@ def configure_terrain_protocol(env_cfg) -> None:
     if args_cli.terrain_protocol == "rough_stratified":
         expected_names = ["flat", "random_rough"]
         expected_proportions = [0.5, 0.5]
-    else:
+    elif args_cli.terrain_protocol == "multiterrain_stratified":
         expected_names = [
             "flat",
             "random_rough",
@@ -173,6 +334,41 @@ def configure_terrain_protocol(env_cfg) -> None:
             "boxes",
         ]
         expected_proportions = [0.10, 0.20, 0.10, 0.10, 0.15, 0.15, 0.20]
+    elif args_cli.terrain_protocol == "v5_foundation_stratified":
+        expected_names = [
+            "flat",
+            "random_rough",
+            "pyramid_slope",
+            "inverted_pyramid_slope",
+        ]
+        expected_proportions = [0.25, 0.25, 0.25, 0.25]
+    elif args_cli.terrain_protocol == "v5_stairs_stratified":
+        expected_names = [
+            "flat",
+            "random_rough",
+            "pyramid_stairs",
+            "inverted_pyramid_stairs",
+        ]
+        expected_proportions = [0.15, 0.15, 0.35, 0.35]
+    elif args_cli.terrain_protocol == "v5_boxes_stratified":
+        expected_names = ["flat", "random_rough", "boxes"]
+        expected_proportions = (
+            [0.05, 0.05, 0.90]
+            if args_cli.task == "Unitree-Go2-Velocity-V5-Boxes-Safety-Remediation"
+            else [0.15, 0.15, 0.70]
+        )
+    elif args_cli.terrain_protocol in {
+        "teacher_v1_stratified",
+        "teacher_v2_stratified",
+        "teacher_v3_stratified",
+    }:
+        if len(sub_terrains) != 1:
+            raise ValueError(
+                f"{args_cli.terrain_protocol} requires exactly one terrain type; "
+                f"got {list(sub_terrains)}"
+            )
+        expected_names = list(sub_terrains)
+        expected_proportions = [1.0]
     if list(sub_terrains) != expected_names:
         raise ValueError(
             f"{args_cli.terrain_protocol} requires ordered sub-terrains {expected_names}; "
@@ -189,9 +385,79 @@ def configure_terrain_protocol(env_cfg) -> None:
 
     generator_cfg.seed = args_cli.seed
     generator_cfg.curriculum = True
-    generator_cfg.num_rows = 10
-    generator_cfg.num_cols = 20
+    if args_cli.terrain_protocol in {
+        "v5_foundation_stratified",
+        "v5_stairs_stratified",
+        "v5_boxes_stratified",
+    }:
+        generator_cfg.num_rows = 8
+        generator_cfg.num_cols = 16 if args_cli.terrain_protocol == "v5_foundation_stratified" else 20
+    else:
+        generator_cfg.num_rows = 10
+        generator_cfg.num_cols = 20
     terrain_cfg.max_init_terrain_level = generator_cfg.num_rows - 1
+
+
+def configure_fixed_command(env_cfg) -> dict | None:
+    """Apply one constant body-frame velocity command for every evaluation episode."""
+
+    if args_cli.fixed_command_x is None:
+        return None
+    command_cfg = env_cfg.commands.base_velocity
+    command_cfg.rel_standing_envs = 0.0
+    # Keep one immutable command/heading target for the entire fixed-command
+    # episode.  A 20 s resampling period coincides with the default 20 s
+    # episode boundary and can expose the next target in final-step metrics.
+    command_cfg.resampling_time_range = (1.0e9, 1.0e9)
+    command_cfg.ranges.lin_vel_x = (args_cli.fixed_command_x, args_cli.fixed_command_x)
+    command_cfg.ranges.lin_vel_y = (args_cli.fixed_command_y, args_cli.fixed_command_y)
+    metadata = {
+        "lin_vel_x_mps": args_cli.fixed_command_x,
+        "lin_vel_y_mps": args_cli.fixed_command_y,
+        "resampling_time_seconds": 1.0e9,
+    }
+    if args_cli.fixed_relative_heading is not None:
+        if not hasattr(command_cfg, "relative_heading_range"):
+            raise ValueError("--fixed_relative_heading requires a relative-heading command task")
+        command_cfg.heading_command = True
+        command_cfg.rel_heading_envs = 1.0
+        command_cfg.relative_heading_range = (
+            args_cli.fixed_relative_heading,
+            args_cli.fixed_relative_heading,
+        )
+        metadata.update(
+            {
+                "mode": "fixed_relative_heading",
+                "relative_heading_target_rad": args_cli.fixed_relative_heading,
+                "ang_vel_z_limit_radps": list(command_cfg.ranges.ang_vel_z),
+            }
+        )
+    elif args_cli.fixed_heading is None:
+        command_cfg.ranges.ang_vel_z = (args_cli.fixed_command_yaw, args_cli.fixed_command_yaw)
+        command_cfg.ranges.heading = None
+        command_cfg.heading_command = False
+        metadata.update({"mode": "fixed_yaw_rate", "ang_vel_z_radps": args_cli.fixed_command_yaw})
+    else:
+        command_cfg.heading_command = True
+        command_cfg.rel_heading_envs = 1.0
+        command_cfg.heading_control_stiffness = 1.0
+        command_cfg.ranges.heading = (args_cli.fixed_heading, args_cli.fixed_heading)
+        command_cfg.ranges.ang_vel_z = (-1.0, 1.0)
+        metadata.update(
+            {
+                "mode": "fixed_world_heading_feedback",
+                "heading_target_rad": args_cli.fixed_heading,
+                "heading_control_stiffness": command_cfg.heading_control_stiffness,
+                "ang_vel_z_limit_radps": list(command_cfg.ranges.ang_vel_z),
+            }
+        )
+    if args_cli.fixed_initial_yaw is not None:
+        env_cfg.events.reset_base.params["pose_range"]["yaw"] = (
+            args_cli.fixed_initial_yaw,
+            args_cli.fixed_initial_yaw,
+        )
+        metadata["initial_yaw_rad"] = args_cli.fixed_initial_yaw
+    return metadata
 
 
 def terrain_column_names(generator_cfg) -> list[str]:
@@ -219,7 +485,16 @@ def terrain_column_names(generator_cfg) -> list[str]:
 def apply_terrain_stratification(raw_env, num_envs: int) -> bool:
     """Assign deterministic terrain types and levels for a stratified protocol."""
 
-    if args_cli.terrain_protocol not in {"rough_stratified", "multiterrain_stratified"}:
+    if args_cli.terrain_protocol not in {
+        "rough_stratified",
+        "multiterrain_stratified",
+        "v5_foundation_stratified",
+        "v5_stairs_stratified",
+        "v5_boxes_stratified",
+        "teacher_v1_stratified",
+        "teacher_v2_stratified",
+        "teacher_v3_stratified",
+    }:
         return False
 
     terrain = raw_env.scene.terrain
@@ -237,6 +512,21 @@ def apply_terrain_stratification(raw_env, num_envs: int) -> bool:
         paired_levels = torch.remainder(local_ids + args_cli.seed, num_rows)
         terrain.terrain_types[:] = torch.cat((local_columns, local_columns + columns_per_type))
         terrain.terrain_levels[:] = torch.cat((paired_levels, paired_levels))
+    elif args_cli.terrain_protocol == "v5_boxes_stratified":
+        matching_columns = [index for index, name in enumerate(column_names) if name == "boxes"]
+        if not matching_columns:
+            raise RuntimeError("no generated columns found for boxes terrain")
+        envs_per_level = num_envs // num_rows
+        local_ids = torch.arange(num_envs, device=device, dtype=torch.long)
+        terrain.terrain_types[:] = torch.tensor(
+            [matching_columns[(index + args_cli.seed) % len(matching_columns)] for index in range(num_envs)],
+            device=device,
+            dtype=torch.long,
+        )
+        terrain.terrain_levels[:] = torch.remainder(
+            torch.div(local_ids, envs_per_level, rounding_mode="floor") + args_cli.seed,
+            num_rows,
+        )
     else:
         terrain_names = list(generator_cfg.sub_terrains)
         envs_per_type = num_envs // len(terrain_names)
@@ -259,7 +549,16 @@ def build_terrain_assignment(env_cfg, raw_env, num_envs: int) -> tuple[list[dict
     """Capture each environment's fixed terrain assignment and its protocol metadata."""
 
     generator_cfg = getattr(env_cfg.scene.terrain, "terrain_generator", None)
-    if args_cli.terrain_protocol not in {"rough_stratified", "multiterrain_stratified"}:
+    if args_cli.terrain_protocol not in {
+        "rough_stratified",
+        "multiterrain_stratified",
+        "v5_foundation_stratified",
+        "v5_stairs_stratified",
+        "v5_boxes_stratified",
+        "teacher_v1_stratified",
+        "teacher_v2_stratified",
+        "teacher_v3_stratified",
+    }:
         assignments = [
             {
                 "terrain_protocol": args_cli.terrain_protocol,
@@ -364,9 +663,29 @@ def build_terrain_assignment(env_cfg, raw_env, num_envs: int) -> tuple[list[dict
             "same deterministic level. All levels 0-9 occur in each type, with seed selecting "
             "which levels receive the two extra environments when num_envs=64."
             if args_cli.terrain_protocol == "rough_stratified"
-            else "Equal environment blocks for all seven ordered terrain types. Within every type, "
-            "environments cycle through that type's generated columns and cover levels 0-9; the "
-            "evaluation scenario seed rotates the level assignment."
+            else (
+                "Equal environment blocks for all four ordered v5 terrain types. Within every type, "
+                "environments cycle through that type's generated columns and cover levels 0-7; "
+                "the evaluation scenario seed rotates the level assignment."
+                if args_cli.terrain_protocol in {"v5_foundation_stratified", "v5_stairs_stratified"}
+                else (
+                    "All environments use boxes columns. Environments are divided equally across "
+                    "levels 0-7; the evaluation scenario seed rotates both level order and boxes "
+                    "column selection. Commands retain the task's seeded random distribution."
+                    if args_cli.terrain_protocol == "v5_boxes_stratified"
+                    else (
+                        "All environments use the task's sole terrain type and cover "
+                        "levels 0-9; the evaluation scenario seed rotates level and generated-column "
+                        "assignment. Commands retain the task distribution unless fixed-command options "
+                        "are provided."
+                        if args_cli.terrain_protocol
+                        in {"teacher_v1_stratified", "teacher_v2_stratified", "teacher_v3_stratified"}
+                        else "Equal environment blocks for all seven ordered terrain types. Within every "
+                        "type, environments cycle through that type's generated columns and cover levels "
+                        "0-9; the evaluation scenario seed rotates the level assignment."
+                    )
+                )
+            )
         ),
         "sub_terrain_proportions": sub_terrain_proportions,
         "sub_terrain_parameters": sub_terrain_parameters,
@@ -400,6 +719,19 @@ def aggregate_rows(rows: list[dict]) -> dict:
         "rmse_yaw_velocity_error_radps": average("rmse_yaw_velocity_error_radps"),
         "mean_command_xy_speed_mps": average("mean_command_xy_speed_mps"),
         "mean_command_abs_yaw_rate_radps": average("mean_command_abs_yaw_rate_radps"),
+        "mean_abs_heading_error_rad": average("mean_abs_heading_error_rad"),
+        "rmse_heading_error_rad": average("rmse_heading_error_rad"),
+        "mean_final_abs_heading_error_rad": average("final_abs_heading_error_rad"),
+        "mean_heading_within_5deg_fraction": average("heading_within_5deg_fraction"),
+        "mean_heading_within_10deg_fraction": average("heading_within_10deg_fraction"),
+        "mean_heading_within_15deg_fraction": average("heading_within_15deg_fraction"),
+        "mean_target_heading_progress_mps": average("mean_target_heading_progress_mps"),
+        "mean_target_heading_distance_m": average("target_heading_distance_m"),
+        "mean_command_aligned_progress_mps": average("mean_command_aligned_progress_mps"),
+        "mean_command_aligned_distance_m": average("command_aligned_distance_m"),
+        "mean_integrated_planar_displacement_m": average("integrated_planar_displacement_m"),
+        "mean_planar_path_length_m": average("planar_path_length_m"),
+        "mean_stall_fraction": average("stall_fraction"),
         "mean_action_delta_l2": average("mean_action_delta_l2"),
         "mean_mechanical_power_w": average("mean_mechanical_power_w"),
         "mean_mechanical_energy_j": average("mechanical_energy_j"),
@@ -465,6 +797,11 @@ def main() -> None:
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(args_cli.task, args_cli)
     env_cfg.seed = args_cli.seed
     configure_terrain_protocol(env_cfg)
+    fixed_command = configure_fixed_command(env_cfg)
+    # Evaluations are always headless.  Command arrows are unnecessary and
+    # otherwise make Isaac Sim probe a remote USD asset during every process
+    # launch, which can stall an offline matrix run for up to 300 seconds.
+    env_cfg.commands.base_velocity.debug_vis = False
 
     base_env = gym.make(args_cli.task, cfg=env_cfg)
     if apply_terrain_stratification(base_env.unwrapped, args_cli.num_envs):
@@ -480,10 +817,13 @@ def main() -> None:
     print(f"[EVAL] seed: {args_cli.seed}")
     print(f"[EVAL] terrain_protocol: {args_cli.terrain_protocol}")
     print(f"[EVAL] episodes_per_env: {args_cli.episodes_per_env}")
+    print(f"[EVAL] fixed_command: {fixed_command}")
     print(f"[EVAL] max_episode_length: {env.max_episode_length}")
 
     runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
-    runner.load(str(checkpoint))
+    # Evaluation never updates parameters; loading optimizer state is unnecessary
+    # and would reject valid distillation checkpoints produced by a non-PPO optimizer.
+    runner.load(str(checkpoint), load_optimizer=False)
     policy = runner.get_inference_policy(device=env.unwrapped.device)
 
     observations = env.get_observations()
@@ -494,27 +834,47 @@ def main() -> None:
     robot = raw_env.scene["robot"]
     terminations = raw_env.termination_manager
     command_manager = raw_env.command_manager
+    command_term = command_manager.get_term("base_velocity")
+    if not hasattr(command_term, "heading_target"):
+        raise RuntimeError(
+            "evaluation requires base_velocity to expose heading_target; "
+            "use a heading-command task"
+        )
     device = raw_env.device
     num_envs = env.num_envs
     step_dt = float(raw_env.step_dt)
     terrain_assignments, terrain_metadata = build_terrain_assignment(env_cfg, raw_env, num_envs)
 
-    if args_cli.terrain_protocol in {"rough_stratified", "multiterrain_stratified"}:
+    if args_cli.terrain_protocol in {
+        "rough_stratified",
+        "multiterrain_stratified",
+        "v5_foundation_stratified",
+        "v5_stairs_stratified",
+        "v5_boxes_stratified",
+        "teacher_v1_stratified",
+        "teacher_v2_stratified",
+        "teacher_v3_stratified",
+    }:
         distribution = terrain_metadata["initial_env_distribution"]
         type_counts = distribution["by_type"]
-        expected_names = list(env_cfg.scene.terrain.terrain_generator.sub_terrains)
-        expected_per_type = num_envs // len(expected_names)
-        expected_counts = {name: expected_per_type for name in expected_names}
+        if args_cli.terrain_protocol == "v5_boxes_stratified":
+            expected_counts = {"boxes": num_envs}
+        else:
+            expected_names = list(env_cfg.scene.terrain.terrain_generator.sub_terrains)
+            expected_per_type = num_envs // len(expected_names)
+            expected_counts = {name: expected_per_type for name in expected_names}
         if type_counts != expected_counts:
             raise RuntimeError(
                 f"{args_cli.terrain_protocol} did not produce the required equal assignment: "
                 f"{type_counts}"
             )
-        expected_levels = {str(level) for level in range(10)}
+        num_rows = int(env_cfg.scene.terrain.terrain_generator.num_rows)
+        expected_levels = {str(level) for level in range(num_rows)}
         for terrain_type, level_counts in distribution["by_type_and_level"].items():
             if set(level_counts) != expected_levels:
                 raise RuntimeError(
-                    f"{args_cli.terrain_protocol} did not cover levels 0-9 for {terrain_type}: "
+                    f"{args_cli.terrain_protocol} did not cover levels 0-{num_rows - 1} "
+                    f"for {terrain_type}: "
                     f"{sorted(level_counts, key=int)}"
                 )
 
@@ -533,6 +893,16 @@ def main() -> None:
     yaw_error_sq_sum = tensor_zeros(num_envs, device)
     command_xy_sum = tensor_zeros(num_envs, device)
     command_yaw_sum = tensor_zeros(num_envs, device)
+    heading_error_sum = tensor_zeros(num_envs, device)
+    heading_error_sq_sum = tensor_zeros(num_envs, device)
+    heading_within_5deg_count = tensor_zeros(num_envs, device)
+    heading_within_10deg_count = tensor_zeros(num_envs, device)
+    heading_within_15deg_count = tensor_zeros(num_envs, device)
+    target_heading_progress_sum = tensor_zeros(num_envs, device)
+    command_progress_sum = tensor_zeros(num_envs, device)
+    world_displacement_sum = torch.zeros((num_envs, 2), dtype=torch.float64, device=device)
+    planar_path_length_sum = tensor_zeros(num_envs, device)
+    stall_count = tensor_zeros(num_envs, device)
     action_delta_sum = tensor_zeros(num_envs, device)
     action_delta_count = tensor_zeros(num_envs, device)
     power_sum = tensor_zeros(num_envs, device)
@@ -552,6 +922,7 @@ def main() -> None:
         "step_dt_seconds": step_dt,
         "curriculum_updates_enabled": False,
         "terrain_protocol": args_cli.terrain_protocol,
+        "fixed_command": fixed_command,
         "terrain": terrain_metadata,
         "rsl_rl_version": version("rsl-rl-lib"),
     }
@@ -569,6 +940,22 @@ def main() -> None:
             yaw_error = torch.abs(commands[:, 2] - robot.data.root_ang_vel_b[:, 2])
             command_xy = torch.linalg.vector_norm(commands[:, :2], dim=1)
             command_yaw = torch.abs(commands[:, 2])
+            signed_heading_error = torch.atan2(
+                torch.sin(command_term.heading_target - robot.data.heading_w),
+                torch.cos(command_term.heading_target - robot.data.heading_w),
+            )
+            abs_heading_error = torch.abs(signed_heading_error)
+            command_direction = commands[:, :2] / torch.clamp(command_xy.unsqueeze(1), min=1.0e-6)
+            command_progress = torch.sum(
+                robot.data.root_lin_vel_b[:, :2] * command_direction, dim=1
+            )
+            moving_command = command_xy >= 0.2
+            stalled = moving_command & (command_progress < 0.05)
+            world_velocity_xy = robot.data.root_lin_vel_w[:, :2]
+            target_heading_direction = torch.stack(
+                (torch.cos(command_term.heading_target), torch.sin(command_term.heading_target)), dim=1
+            )
+            target_heading_progress = torch.sum(world_velocity_xy * target_heading_direction, dim=1)
             mechanical_power = torch.sum(
                 torch.abs(robot.data.applied_torque * robot.data.joint_vel), dim=1
             )
@@ -587,10 +974,33 @@ def main() -> None:
             yaw_error_sq_sum[active] += torch.square(yaw_error[active]).double()
             command_xy_sum[active] += command_xy[active].double()
             command_yaw_sum[active] += command_yaw[active].double()
+            heading_error_sum[active] += abs_heading_error[active].double()
+            heading_error_sq_sum[active] += torch.square(abs_heading_error[active]).double()
+            heading_within_5deg_count[active] += (
+                abs_heading_error[active] <= math.radians(5.0)
+            ).double()
+            heading_within_10deg_count[active] += (
+                abs_heading_error[active] <= math.radians(10.0)
+            ).double()
+            heading_within_15deg_count[active] += (
+                abs_heading_error[active] <= math.radians(15.0)
+            ).double()
+            target_heading_progress_sum[active] += target_heading_progress[active].double()
+            command_progress_sum[active] += command_progress[active].double()
+            world_displacement_sum[active] += world_velocity_xy[active].double() * step_dt
+            planar_path_length_sum[active] += (
+                torch.linalg.vector_norm(world_velocity_xy[active], dim=1).double() * step_dt
+            )
+            stall_count[active] += stalled[active].double()
             power_sum[active] += mechanical_power[active].double()
             episode_steps[active] += 1
 
             observations, rewards, dones, _ = env.step(actions)
+            # RSL-RL inference keeps recurrent hidden state internally.  Clear
+            # only completed environments so a new episode never inherits the
+            # previous episode's GRU/LSTM state.  This is a no-op for MLP policies.
+            if getattr(runner.alg.policy, "is_recurrent", False):
+                runner.alg.policy.reset(dones)
             reward_sum[active] += rewards[active].double()
             vector_steps += 1
 
@@ -604,7 +1014,16 @@ def main() -> None:
 
             for env_id_tensor in done_ids:
                 env_id = int(env_id_tensor.item())
-                if args_cli.terrain_protocol in {"rough_stratified", "multiterrain_stratified"}:
+                if args_cli.terrain_protocol in {
+                    "rough_stratified",
+                    "multiterrain_stratified",
+                    "v5_foundation_stratified",
+                    "v5_stairs_stratified",
+                    "v5_boxes_stratified",
+                    "teacher_v1_stratified",
+                    "teacher_v2_stratified",
+                    "teacher_v3_stratified",
+                }:
                     actual_column = int(raw_env.scene.terrain.terrain_types[env_id].item())
                     actual_level = int(raw_env.scene.terrain.terrain_levels[env_id].item())
                     expected_assignment = terrain_assignments[env_id]
@@ -640,6 +1059,37 @@ def main() -> None:
                         ),
                         "mean_command_xy_speed_mps": float(command_xy_sum[env_id].item() / steps),
                         "mean_command_abs_yaw_rate_radps": float(command_yaw_sum[env_id].item() / steps),
+                        "mean_abs_heading_error_rad": float(heading_error_sum[env_id].item() / steps),
+                        "rmse_heading_error_rad": float(
+                            (heading_error_sq_sum[env_id].item() / steps) ** 0.5
+                        ),
+                        "final_abs_heading_error_rad": float(abs_heading_error[env_id].item()),
+                        "heading_within_5deg_fraction": float(
+                            heading_within_5deg_count[env_id].item() / steps
+                        ),
+                        "heading_within_10deg_fraction": float(
+                            heading_within_10deg_count[env_id].item() / steps
+                        ),
+                        "heading_within_15deg_fraction": float(
+                            heading_within_15deg_count[env_id].item() / steps
+                        ),
+                        "mean_target_heading_progress_mps": float(
+                            target_heading_progress_sum[env_id].item() / steps
+                        ),
+                        "target_heading_distance_m": float(
+                            target_heading_progress_sum[env_id].item() * step_dt
+                        ),
+                        "mean_command_aligned_progress_mps": float(
+                            command_progress_sum[env_id].item() / steps
+                        ),
+                        "command_aligned_distance_m": float(
+                            command_progress_sum[env_id].item() * step_dt
+                        ),
+                        "integrated_planar_displacement_m": float(
+                            torch.linalg.vector_norm(world_displacement_sum[env_id]).item()
+                        ),
+                        "planar_path_length_m": float(planar_path_length_sum[env_id].item()),
+                        "stall_fraction": float(stall_count[env_id].item() / steps),
                         "mean_action_delta_l2": float(
                             action_delta_sum[env_id].item() / delta_count if delta_count else 0.0
                         ),
@@ -660,6 +1110,16 @@ def main() -> None:
             yaw_error_sq_sum[done_ids] = 0
             command_xy_sum[done_ids] = 0
             command_yaw_sum[done_ids] = 0
+            heading_error_sum[done_ids] = 0
+            heading_error_sq_sum[done_ids] = 0
+            heading_within_5deg_count[done_ids] = 0
+            heading_within_10deg_count[done_ids] = 0
+            heading_within_15deg_count[done_ids] = 0
+            target_heading_progress_sum[done_ids] = 0
+            command_progress_sum[done_ids] = 0
+            world_displacement_sum[done_ids] = 0
+            planar_path_length_sum[done_ids] = 0
+            stall_count[done_ids] = 0
             action_delta_sum[done_ids] = 0
             action_delta_count[done_ids] = 0
 

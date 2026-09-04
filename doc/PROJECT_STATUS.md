@@ -1,10 +1,20 @@
 # Unitree Go2 RL 项目状态
 
-更新时间：2026-08-26
+更新时间：2026-09-04
 
 ## 项目目标
 
-基于 Unitree RL Lab 和 Isaac Lab 复现 Go2 velocity locomotion，并形成面向机器人强化学习/具身智能岗位的完整项目。目前不做实机部署。
+基于 Unitree RL Lab 和 Isaac Lab 构建 Go2 七地形 Teacher–Student 速度跟踪系统。最终部署接口固定为非负前进速度 `vx` 加相对当前朝向 ±45° 的 heading target，`vy=0`；不要求后退、横移和原地旋转。当前不做实机部署。
+
+## 当前总状态（2026-09-04）
+
+- Teacher v1：七个 terrain-specific teacher 已分别从零训练 5,000 updates，并完成候选筛选、evaluation scenario seeds 7/42/123 随机命令评估和固定命令矩阵。由于训练命令域包含后退/横移，与最终接口不完全一致，现冻结为可追溯 baseline。
+- Proxy student：training seed 42、从零训练 10,000 updates，最终 checkpoint SHA-256 为 `f70ce64aa44a54ced84660e51c114d7b105f04f1fdfc876d93fb54eb9912cc5b`。尽管 imitation loss 下降，闭环任务表现很差，不能作为最终统一策略。
+- Teacher v2：七个 heading-command 任务完成注册；flat、random rough、pyramid slope、inverted pyramid slope 已形成接受候选。楼梯和 boxes 暴露前腿跳跃、后腿拖行/翘起等步态缺陷，因此进入专项修复。
+- Teacher v3：pyramid stairs、inverted pyramid stairs、boxes 已从零完成 training seed 42、2,048 env、5,000 updates；每个策略 327,680,000 transitions。
+- Teacher v3 candidate screen：9 个 checkpoint、evaluation scenario seed 123、每个 100 env × 2 episodes，共 1,800 episodes；所有 CSV 无非有限值。
+- Teacher v3 gait gate：保留 `terrain_fixed` 与 `asset_follow` 两种视角。Pyramid Stairs `model_4999` 和 Inverted Stairs `model_4700` 通过数值门槛；Boxes `model_4999` 在 level 5 单轨迹发生 bad-orientation，净命令方向位移接近零，尚未通过。
+- 最终目标仍是按最终命令契约重新形成七个合格 teacher，再从零训练真正统一的 recurrent perceptive student。
 
 ## 固定软件版本
 

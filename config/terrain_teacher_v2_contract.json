@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "status": "approved_final_command_aligned_teacher_contract",
+  "initialization": "random_from_scratch",
+  "training_seed_development_default": 42,
+  "actor_observation_dim": 162,
+  "critic_observation_dim": 177,
+  "action_dim": 12,
+  "action_scale": 0.25,
+  "height_scan_dim": 117,
+  "command_schema": ["forward_speed_mps", "zero_lateral_speed_mps", "heading_derived_yaw_rate_radps"],
+  "heading": {
+    "sampling_reference": "robot_world_heading_at_command_resample",
+    "relative_target_range_rad": [-0.7853981633974483, 0.7853981633974483],
+    "target_fixed_for_command_segment": true,
+    "command_segment_seconds": 20.0,
+    "in_place_rotation": false,
+    "minimum_turning_speed_mps": 0.1,
+    "minimum_turn_radius_m": 0.55,
+    "maximum_lateral_acceleration_mps2": 0.45
+  },
+  "forward_speed_ranges_mps": {
+    "flat": [0.0, 0.8],
+    "random_rough": [0.1, 0.65],
+    "pyramid_slope": [0.1, 0.55],
+    "inverted_pyramid_slope": [0.1, 0.55],
+    "pyramid_stairs": [0.15, 0.5],
+    "inverted_pyramid_stairs": [0.15, 0.5],
+    "boxes": [0.15, 0.5]
+  },
+  "maximum_yaw_rates_radps": {
+    "flat": 0.6,
+    "random_rough": 0.5,
+    "pyramid_slope": 0.45,
+    "inverted_pyramid_slope": 0.45,
+    "pyramid_stairs": 0.3,
+    "inverted_pyramid_stairs": 0.3,
+    "boxes": 0.3
+  },
+  "student_observation_contains_terrain_id": false,
+  "v1_checkpoint_resume_allowed": false,
+  "acceptance_requires": [
+    "evaluation_scenario_seeds_7_42_123",
+    "terrain_levels_0_through_9",
+    "forward_speed_and_heading_matrix",
+    "world_heading_and_goal_progress",
+    "per_foot_gait_metrics",
+    "hard_safety_veto",
+    "finite_values"
+  ]
+}

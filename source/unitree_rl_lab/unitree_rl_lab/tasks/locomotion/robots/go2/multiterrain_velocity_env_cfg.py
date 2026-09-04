@@ -1,11 +1,15 @@
 """Challenging mixed-terrain velocity task for the Unitree Go2."""
 
 import isaaclab.terrains as terrain_gen
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.sensors import RayCasterCfg, patterns
 from isaaclab.utils import configclass
+from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 from unitree_rl_lab.tasks.locomotion import mdp
 
-from .velocity_env_cfg import RobotEnvCfg
+from .velocity_env_cfg import ObservationsCfg, RobotEnvCfg
 
 
 # Keep the terrain mix aligned to the 20 curriculum columns so that every
@@ -108,3 +112,65 @@ class TrackingAwareMultiTerrainRobotEnvCfg(MultiTerrainRobotEnvCfg):
             "reward_term_name": "track_lin_vel_xy",
             "tracking_threshold": 0.65,
         }
+
+
+@configclass
+class HeightScanObservationsCfg(ObservationsCfg):
+    """Append a sparse forward terrain scan to the existing actor and critic inputs."""
+
+    @configclass
+    class HeightScanPolicyCfg(ObservationsCfg.PolicyCfg):
+        height_scan = ObsTerm(
+            func=mdp.height_scan,
+            params={"sensor_cfg": SceneEntityCfg("height_scanner")},
+            clip=(-1.0, 1.0),
+            noise=Unoise(n_min=-0.02, n_max=0.02),
+        )
+
+    policy: HeightScanPolicyCfg = HeightScanPolicyCfg()
+
+    @configclass
+    class HeightScanCriticCfg(ObservationsCfg.CriticCfg):
+        height_scan = ObsTerm(
+            func=mdp.height_scan,
+            params={"sensor_cfg": SceneEntityCfg("height_scanner")},
+            clip=(-1.0, 1.0),
+        )
+
+    critic: HeightScanCriticCfg = HeightScanCriticCfg()
+
+
+@configclass
+class HeightScanMultiTerrainRobotEnvCfg(MultiTerrainRobotEnvCfg):
+    """Seven-terrain task with forward exteroception and progress-gated curriculum."""
+
+    observations: HeightScanObservationsCfg = HeightScanObservationsCfg()
+
+    def __post_init__(self):
+        super().__post_init__()
+        # A 1.2 x 0.8 m, 0.1 m grid yields 13 x 9 = 117 rays. Shifting it
+        # forward retains a small rear margin while looking about one metre ahead.
+        self.scene.height_scanner.offset = RayCasterCfg.OffsetCfg(pos=(0.45, 0.0, 20.0))
+        self.scene.height_scanner.pattern_cfg = patterns.GridPatternCfg(resolution=0.1, size=(1.2, 0.8))
+        self.curriculum.terrain_levels.func = mdp.multiterrain_levels_progress_tracking_survival
+        self.curriculum.terrain_levels.params = {
+            "reward_term_name": "track_lin_vel_xy",
+            "tracking_threshold": 0.45,
+            "minimum_displacement_m": 0.75,
+            "standing_command_threshold": 0.1,
+        }
+        # Hold the moderate +/-0.5 m/s command range fixed while terrain
+        # perception is learned; terrain and command difficulty must not rise together.
+        self.curriculum.lin_vel_cmd_levels = None
+
+
+@configclass
+class HeightScanMultiTerrainRobotPlayEnvCfg(HeightScanMultiTerrainRobotEnvCfg):
+    """Playback/evaluation configuration retaining all seven terrain types."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.scene.num_envs = 64
+        self.scene.terrain.terrain_generator.num_rows = 2
+        self.scene.terrain.terrain_generator.num_cols = 20
+        self.commands.base_velocity.ranges = self.commands.base_velocity.limit_ranges

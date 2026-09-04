@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "status": "seven_independent_from_scratch_teachers",
+  "actor_observation_dim": 162,
+  "critic_observation_dim": 177,
+  "action_dim": 12,
+  "action_scale": 0.25,
+  "height_scan_dim": 117,
+  "command_schema": ["lin_vel_x_mps", "lin_vel_y_mps", "ang_vel_z_radps"],
+  "student_observation_contains_terrain_id": false,
+  "policy": {
+    "type": "recurrent_ppo",
+    "rnn_type": "gru",
+    "rnn_hidden_dim": 256,
+    "rnn_num_layers": 1,
+    "actor_hidden_dims": [512, 256, 128],
+    "critic_hidden_dims": [512, 256, 128]
+  },
+  "teachers": {
+    "flat": {
+      "task": "Unitree-Go2-Velocity-TeacherV1-Flat",
+      "feasible_command_domain": {"lin_vel_x": [-0.6, 0.8], "lin_vel_y": [-0.35, 0.35], "ang_vel_z": [-0.8, 0.8]}
+    },
+    "random_rough": {
+      "task": "Unitree-Go2-Velocity-TeacherV1-RandomRough",
+      "feasible_command_domain": {"lin_vel_x": [-0.3, 0.65], "lin_vel_y": [-0.2, 0.2], "ang_vel_z": [-0.6, 0.6]}
+    },
+    "pyramid_slope": {
+      "task": "Unitree-Go2-Velocity-TeacherV1-PyramidSlope",
+      "feasible_command_domain": {"lin_vel_x": [-0.2, 0.55], "lin_vel_y": [-0.15, 0.15], "ang_vel_z": [-0.5, 0.5]}
+    },
+    "inverted_pyramid_slope": {
+      "task": "Unitree-Go2-Velocity-TeacherV1-InvertedPyramidSlope",
+      "feasible_command_domain": {"lin_vel_x": [-0.2, 0.55], "lin_vel_y": [-0.15, 0.15], "ang_vel_z": [-0.5, 0.5]}
+    },
+    "pyramid_stairs": {
+      "task": "Unitree-Go2-Velocity-TeacherV1-PyramidStairs",
+      "feasible_command_domain": {"lin_vel_x": [0.15, 0.5], "lin_vel_y": [-0.08, 0.08], "ang_vel_z": [-0.3, 0.3]}
+    },
+    "inverted_pyramid_stairs": {
+      "task": "Unitree-Go2-Velocity-TeacherV1-InvertedPyramidStairs",
+      "feasible_command_domain": {"lin_vel_x": [0.15, 0.5], "lin_vel_y": [-0.08, 0.08], "ang_vel_z": [-0.3, 0.3]}
+    },
+    "boxes": {
+      "task": "Unitree-Go2-Velocity-TeacherV1-Boxes",
+      "feasible_command_domain": {"lin_vel_x": [0.15, 0.5], "lin_vel_y": [-0.08, 0.08], "ang_vel_z": [-0.3, 0.3]}
+    }
+  }
+}

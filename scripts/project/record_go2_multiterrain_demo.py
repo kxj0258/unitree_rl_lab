@@ -6,6 +6,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import sys
 import time
 from importlib.metadata import version
@@ -32,7 +33,36 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
     "--task",
     default="Unitree-Go2-Velocity-MultiTerrain",
-    choices=("Unitree-Go2-Velocity-MultiTerrain", "Unitree-Go2-Velocity-Rough"),
+    choices=(
+        "Unitree-Go2-Velocity-MultiTerrain",
+        "Unitree-Go2-Velocity-MultiTerrain-HeightScan",
+        "Unitree-Go2-Velocity-ProxyStudent-HeightScan",
+        "Unitree-Go2-Velocity-Rough",
+        "Unitree-Go2-Velocity-V5-Stairs-Specialist",
+        "Unitree-Go2-Velocity-V5-Boxes-Mixed-Command-Remediation",
+        "Unitree-Go2-Velocity-V5-Boxes-Safety-Remediation",
+        "Unitree-Go2-Velocity-TeacherV1-Flat",
+        "Unitree-Go2-Velocity-TeacherV1-RandomRough",
+        "Unitree-Go2-Velocity-TeacherV1-PyramidSlope",
+        "Unitree-Go2-Velocity-TeacherV1-InvertedPyramidSlope",
+        "Unitree-Go2-Velocity-TeacherV1-PyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV1-InvertedPyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV1-Boxes",
+        "Unitree-Go2-Velocity-TeacherV2-Flat",
+        "Unitree-Go2-Velocity-TeacherV2-RandomRough",
+        "Unitree-Go2-Velocity-TeacherV2-PyramidSlope",
+        "Unitree-Go2-Velocity-TeacherV2-InvertedPyramidSlope",
+        "Unitree-Go2-Velocity-TeacherV2-PyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV2-PyramidStairsRemediation",
+        "Unitree-Go2-Velocity-TeacherV2-PyramidStairsRemediationV2",
+        "Unitree-Go2-Velocity-TeacherV2-InvertedPyramidStairsRemediation",
+        "Unitree-Go2-Velocity-TeacherV2-BoxesRemediation",
+        "Unitree-Go2-Velocity-TeacherV3-PyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV3-InvertedPyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV3-Boxes",
+        "Unitree-Go2-Velocity-TeacherV2-InvertedPyramidStairs",
+        "Unitree-Go2-Velocity-TeacherV2-Boxes",
+    ),
 )
 parser.add_argument("--terrain_type", required=True, choices=TERRAIN_NAMES)
 parser.add_argument("--terrain_level", type=int, default=5)
@@ -44,6 +74,36 @@ parser.add_argument("--output_dir", required=True, help="New per-terrain output 
 parser.add_argument("--command_x", type=float, default=0.35)
 parser.add_argument("--command_y", type=float, default=0.0)
 parser.add_argument("--command_yaw", type=float, default=0.0)
+parser.add_argument(
+    "--fixed_heading",
+    type=float,
+    default=None,
+    help="Optional fixed world-frame heading target in radians; enables heading feedback.",
+)
+parser.add_argument(
+    "--fixed_initial_yaw",
+    type=float,
+    default=None,
+    help="Optional fixed initial world-frame robot yaw in radians.",
+)
+parser.add_argument(
+    "--fixed_relative_heading",
+    type=float,
+    default=None,
+    help="Lock a Teacher v2 heading target relative to yaw at command resampling.",
+)
+parser.add_argument(
+    "--stall_window_seconds",
+    type=float,
+    default=2.0,
+    help="Rolling window used to label commanded motion with insufficient forward progress.",
+)
+parser.add_argument(
+    "--stall_min_progress_m",
+    type=float,
+    default=0.05,
+    help="Minimum signed progress over the stall window when |command_x| >= 0.1 m/s.",
+)
 parser.add_argument(
     "--camera_mode",
     choices=("terrain_fixed", "asset_follow"),
@@ -59,16 +119,30 @@ if args_cli.task == "Unitree-Go2-Velocity-Rough" and args_cli.terrain_type not i
     parser.error("the rough task only supports flat or random_rough")
 if not args_cli.checkpoint:
     parser.error("--checkpoint is required")
-if not 0 <= args_cli.terrain_level <= 9:
-    parser.error("--terrain_level must be in [0, 9]")
+v5_eight_level_tasks = {
+    "Unitree-Go2-Velocity-V5-Stairs-Specialist",
+    "Unitree-Go2-Velocity-V5-Boxes-Mixed-Command-Remediation",
+    "Unitree-Go2-Velocity-V5-Boxes-Safety-Remediation",
+}
+max_terrain_level = 7 if args_cli.task in v5_eight_level_tasks else 9
+if not 0 <= args_cli.terrain_level <= max_terrain_level:
+    parser.error(f"--terrain_level must be in [0, {max_terrain_level}] for {args_cli.task}")
 if args_cli.seed < 0:
     parser.error("--seed must be non-negative")
 if args_cli.training_seed < 0:
     parser.error("--training_seed must be non-negative")
+if args_cli.fixed_relative_heading is not None and not math.isfinite(args_cli.fixed_relative_heading):
+    parser.error("--fixed_relative_heading must be finite")
+if args_cli.fixed_heading is not None and args_cli.fixed_relative_heading is not None:
+    parser.error("--fixed_heading and --fixed_relative_heading are mutually exclusive")
 if args_cli.video_length <= 0:
     parser.error("--video_length must be positive")
 if not 0 <= args_cli.warmup_steps < args_cli.video_length:
     parser.error("--warmup_steps must be in [0, video_length)")
+if args_cli.stall_window_seconds <= 0:
+    parser.error("--stall_window_seconds must be positive")
+if args_cli.stall_min_progress_m < 0:
+    parser.error("--stall_min_progress_m must be non-negative")
 
 output_dir = Path(args_cli.output_dir).expanduser().resolve()
 if output_dir.exists():
@@ -117,6 +191,20 @@ def terrain_column_names(generator_cfg) -> list[str]:
     return result
 
 
+def quaternion_wxyz_to_euler(quaternion: torch.Tensor) -> tuple[float, float, float]:
+    """Return XYZ roll, pitch and yaw in radians for one scalar-first quaternion."""
+    w, x, y, z = (float(value) for value in quaternion.detach().cpu().tolist())
+    roll = math.atan2(2.0 * (w * x + y * z), 1.0 - 2.0 * (x * x + y * y))
+    sin_pitch = max(-1.0, min(1.0, 2.0 * (w * y - z * x)))
+    pitch = math.asin(sin_pitch)
+    yaw = math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
+    return roll, pitch, yaw
+
+
+def contact_body_ids(sensor, suffix: str) -> list[int]:
+    return [index for index, name in enumerate(sensor.body_names) if name == suffix or name.endswith(suffix)]
+
+
 def main() -> None:
     checkpoint = Path(retrieve_file_path(args_cli.checkpoint)).resolve()
     if not checkpoint.is_file():
@@ -136,14 +224,38 @@ def main() -> None:
     generator_cfg = env_cfg.scene.terrain.terrain_generator
     generator_cfg.seed = args_cli.seed
     generator_cfg.curriculum = True
-    generator_cfg.num_rows = 10
+    generator_cfg.num_rows = 8 if args_cli.task in v5_eight_level_tasks else 10
     generator_cfg.num_cols = 20
-    env_cfg.scene.terrain.max_init_terrain_level = 9
+    env_cfg.scene.terrain.max_init_terrain_level = max_terrain_level
     ranges = env_cfg.commands.base_velocity.ranges
+    env_cfg.commands.base_velocity.resampling_time_range = (1.0e9, 1.0e9)
+    env_cfg.commands.base_velocity.debug_vis = False
     ranges.lin_vel_x = (args_cli.command_x, args_cli.command_x)
     ranges.lin_vel_y = (args_cli.command_y, args_cli.command_y)
-    ranges.ang_vel_z = (args_cli.command_yaw, args_cli.command_yaw)
-    ranges.heading = None
+    if args_cli.fixed_relative_heading is not None:
+        if not hasattr(env_cfg.commands.base_velocity, "relative_heading_range"):
+            raise ValueError("--fixed_relative_heading requires a relative-heading command task")
+        env_cfg.commands.base_velocity.relative_heading_range = (
+            args_cli.fixed_relative_heading,
+            args_cli.fixed_relative_heading,
+        )
+        env_cfg.commands.base_velocity.heading_command = True
+        env_cfg.commands.base_velocity.rel_heading_envs = 1.0
+    elif args_cli.fixed_heading is None:
+        ranges.ang_vel_z = (args_cli.command_yaw, args_cli.command_yaw)
+        ranges.heading = None
+        env_cfg.commands.base_velocity.heading_command = False
+    else:
+        ranges.ang_vel_z = (-1.0, 1.0)
+        ranges.heading = (args_cli.fixed_heading, args_cli.fixed_heading)
+        env_cfg.commands.base_velocity.heading_command = True
+        env_cfg.commands.base_velocity.rel_heading_envs = 1.0
+        env_cfg.commands.base_velocity.heading_control_stiffness = 1.0
+    if args_cli.fixed_initial_yaw is not None:
+        env_cfg.events.reset_base.params["pose_range"]["yaw"] = (
+            args_cli.fixed_initial_yaw,
+            args_cli.fixed_initial_yaw,
+        )
     env_cfg.viewer.origin_type = "asset_root" if args_cli.camera_mode == "asset_follow" else "world"
     env_cfg.viewer.asset_name = "robot"
     env_cfg.viewer.env_index = 0
@@ -167,15 +279,23 @@ def main() -> None:
     terrain.env_origins[:] = terrain.terrain_origins[terrain.terrain_levels, terrain.terrain_types]
     base_env.reset()
 
-    robot_start = raw_env.scene["robot"].data.root_pos_w[0].detach().cpu().tolist()
+    camera_robot_start = raw_env.scene["robot"].data.root_pos_w[0].detach().cpu().tolist()
+    contact_sensor = raw_env.scene.sensors["contact_forces"]
+    foot_body_ids = contact_body_ids(contact_sensor, "_foot")
+    base_body_ids = contact_body_ids(contact_sensor, "base")
+    if len(foot_body_ids) != 4:
+        raise RuntimeError(f"expected four foot contact bodies, got {foot_body_ids}: {contact_sensor.body_names}")
+    if len(base_body_ids) != 1:
+        raise RuntimeError(f"expected one base contact body, got {base_body_ids}: {contact_sensor.body_names}")
+    foot_names = [contact_sensor.body_names[index] for index in foot_body_ids]
     if args_cli.camera_mode == "terrain_fixed":
-        camera_eye = [robot_start[0] + 3.0, robot_start[1] + 5.0, robot_start[2] + 2.3]
-        camera_target = [robot_start[0] + 1.5, robot_start[1], robot_start[2] - 0.15]
+        camera_eye = [camera_robot_start[0] + 3.0, camera_robot_start[1] + 5.0, camera_robot_start[2] + 2.3]
+        camera_target = [camera_robot_start[0] + 1.5, camera_robot_start[1], camera_robot_start[2] - 0.15]
         raw_env.sim.set_camera_view(eye=camera_eye, target=camera_target)
     else:
         camera_eye = list(env_cfg.viewer.eye)
         camera_target = list(env_cfg.viewer.lookat)
-    print(f"[DEMO] robot_start_world={robot_start}")
+    print(f"[DEMO] camera_reference_robot_world={camera_robot_start}")
     print(f"[DEMO] camera_mode={args_cli.camera_mode} eye={camera_eye} target={camera_target}")
 
     video_dir = output_dir / "video"
@@ -189,12 +309,27 @@ def main() -> None:
     )
     env = RslRlVecEnvWrapper(base_env, clip_actions=agent_cfg.clip_actions)
     runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
-    runner.load(str(checkpoint))
+    # Recording is inference-only.  Distilled students may carry an Adam
+    # optimizer state that is intentionally incompatible with PPO's optimizer.
+    runner.load(str(checkpoint), load_optimizer=False)
     policy = runner.get_inference_policy(device=raw_env.device)
 
     observations = env.get_observations()
     if version("rsl-rl-lib").startswith("2.3."):
         observations, _ = env.get_observations()
+    # RSL-RL wrapper construction may reset the environment. Establish all
+    # displacement diagnostics only after its final initialization reset.
+    robot_start = raw_env.scene["robot"].data.root_pos_w[0].detach().cpu().tolist()
+    robot_start_quat = raw_env.scene["robot"].data.root_quat_w[0].detach().clone()
+    _, _, robot_start_yaw = quaternion_wxyz_to_euler(robot_start_quat)
+    target_heading_yaw = (
+        robot_start_yaw + args_cli.fixed_relative_heading
+        if args_cli.fixed_relative_heading is not None
+        else (args_cli.fixed_heading if args_cli.fixed_heading is not None else robot_start_yaw)
+    )
+    target_forward_xy = torch.tensor(
+        [math.cos(target_heading_yaw), math.sin(target_heading_yaw)], device=raw_env.device
+    )
 
     reward_sum = 0.0
     xy_error_sum = 0.0
@@ -202,6 +337,8 @@ def main() -> None:
     termination_counts = {"time_out": 0, "base_contact": 0, "bad_orientation": 0}
     samples = []
     cumulative_xy_distance = 0.0
+    stall_window_steps = max(1, round(args_cli.stall_window_seconds / float(raw_env.step_dt)))
+    signed_progress_history: list[float] = []
     start = time.perf_counter()
     for step in range(args_cli.video_length):
         actual_column = int(terrain.terrain_types[0].item())
@@ -214,17 +351,38 @@ def main() -> None:
         command = raw_env.command_manager.get_command("base_velocity")
         velocity = raw_env.scene["robot"].data.root_lin_vel_b
         angular_velocity = raw_env.scene["robot"].data.root_ang_vel_b
+        position_w = raw_env.scene["robot"].data.root_pos_w[0].clone()
+        quaternion_w = raw_env.scene["robot"].data.root_quat_w[0].clone()
+        roll, pitch, yaw = quaternion_wxyz_to_euler(quaternion_w)
+        displacement_xy = position_w[:2] - torch.tensor(robot_start[:2], device=raw_env.device)
+        forward_displacement = float(torch.dot(displacement_xy, target_forward_xy).item())
+        command_direction = 1.0 if args_cli.command_x >= 0.0 else -1.0
+        signed_progress = forward_displacement * command_direction
+        signed_progress_history.append(signed_progress)
+        stalled = False
+        if len(signed_progress_history) > stall_window_steps and abs(args_cli.command_x) >= 0.1:
+            window_progress = signed_progress_history[-1] - signed_progress_history[-1 - stall_window_steps]
+            stalled = step >= args_cli.warmup_steps and window_progress < args_cli.stall_min_progress_m
+        contact_forces = contact_sensor.data.net_forces_w[0]
+        foot_force_norms = torch.linalg.vector_norm(contact_forces[foot_body_ids], dim=-1)
+        base_force_norm = float(torch.linalg.vector_norm(contact_forces[base_body_ids], dim=-1).max().item())
         xy_error = float(torch.linalg.vector_norm(command[0, :2] - velocity[0, :2]).item())
         yaw_error = float(torch.abs(command[0, 2] - angular_velocity[0, 2]).item())
         xy_error_sum += xy_error
         yaw_error_sum += yaw_error
-        position_before = raw_env.scene["robot"].data.root_pos_w[0, :2].clone()
+        position_before = position_w[:2]
         with torch.inference_mode():
             actions = policy(observations)
             observations, rewards, dones, _ = env.step(actions)
+            if getattr(runner.alg.policy, "is_recurrent", False):
+                runner.alg.policy.reset(dones)
         position_after = raw_env.scene["robot"].data.root_pos_w[0, :2]
         reward_sum += float(rewards[0].item())
         done = bool(dones[0].item())
+        terminations = raw_env.termination_manager
+        termination_flags = {
+            name: int(terminations.get_term(name)[0].item()) for name in termination_counts
+        }
         if not done:
             cumulative_xy_distance += float(torch.linalg.vector_norm(position_after - position_before).item())
         row = {
@@ -238,14 +396,31 @@ def main() -> None:
             "actual_yaw_radps": float(angular_velocity[0, 2].item()),
             "xy_error_mps": xy_error,
             "yaw_error_radps": yaw_error,
+            "base_pos_x_m": float(position_w[0].item()),
+            "base_pos_y_m": float(position_w[1].item()),
+            "base_pos_z_m": float(position_w[2].item()),
+            "base_roll_rad": roll,
+            "base_pitch_rad": pitch,
+            "base_yaw_rad": yaw,
+            "forward_displacement_m": forward_displacement,
+            "command_signed_progress_m": signed_progress,
             "cumulative_xy_distance_m": cumulative_xy_distance,
+            "base_contact_force_n": base_force_norm,
+            "base_contact": int(base_force_norm > 1.0),
+            "stalled": int(stalled),
             "done": int(done),
+            "termination_time_out": termination_flags["time_out"],
+            "termination_base_contact": termination_flags["base_contact"],
+            "termination_bad_orientation": termination_flags["bad_orientation"],
         }
+        for foot_name, force_norm in zip(foot_names, foot_force_norms.tolist(), strict=True):
+            safe_name = foot_name.lower().replace("-", "_")
+            row[f"{safe_name}_contact_force_n"] = float(force_norm)
+            row[f"{safe_name}_contact"] = int(force_norm > 1.0)
         samples.append(row)
         if done:
-            terminations = raw_env.termination_manager
             for name in termination_counts:
-                termination_counts[name] += int(terminations.get_term(name)[0].item())
+                termination_counts[name] += termination_flags[name]
 
     elapsed = time.perf_counter() - start
     env.close()
@@ -270,10 +445,42 @@ def main() -> None:
         "terrain_column": terrain_column,
         "terrain_level": args_cli.terrain_level,
         "robot_start_world": robot_start,
+        "robot_start_yaw_rad": robot_start_yaw,
         "camera": {"mode": args_cli.camera_mode, "eye": camera_eye, "target": camera_target},
-        "command": {"lin_vel_x": args_cli.command_x, "lin_vel_y": args_cli.command_y, "ang_vel_z": args_cli.command_yaw},
+        "command": {
+            "lin_vel_x": args_cli.command_x,
+            "lin_vel_y": args_cli.command_y,
+            "mode": (
+                "fixed_relative_heading"
+                if args_cli.fixed_relative_heading is not None
+                else ("fixed_yaw_rate" if args_cli.fixed_heading is None else "fixed_world_heading_feedback")
+            ),
+            "ang_vel_z": (
+                args_cli.command_yaw
+                if args_cli.fixed_heading is None and args_cli.fixed_relative_heading is None
+                else None
+            ),
+            "heading_target_rad": args_cli.fixed_heading,
+            "relative_heading_target_rad": args_cli.fixed_relative_heading,
+            "resolved_target_heading_rad": target_heading_yaw,
+            "resampling_time_seconds": 1.0e9,
+            "heading_control_stiffness": (
+                None
+                if args_cli.fixed_heading is None and args_cli.fixed_relative_heading is None
+                else env_cfg.commands.base_velocity.heading_control_stiffness
+            ),
+            "ang_vel_z_limit_radps": list(ranges.ang_vel_z),
+            "requested_initial_yaw_rad": args_cli.fixed_initial_yaw,
+        },
         "video_steps": args_cli.video_length,
         "warmup_steps": args_cli.warmup_steps,
+        "stall_detection": {
+            "window_seconds": args_cli.stall_window_seconds,
+            "window_steps": stall_window_steps,
+            "minimum_signed_progress_m": args_cli.stall_min_progress_m,
+            "minimum_abs_command_x_mps": 0.1,
+        },
+        "contact_body_names": {"feet": foot_names, "base": [contact_sensor.body_names[i] for i in base_body_ids]},
         "step_dt": float(raw_env.step_dt),
         "simulated_seconds": args_cli.video_length * float(raw_env.step_dt),
         "wall_time_seconds": elapsed,
@@ -287,6 +494,10 @@ def main() -> None:
         "post_warmup_mean_actual_x_velocity_mps": sum(row["actual_x_mps"] for row in steady_samples)
         / len(steady_samples),
         "cumulative_xy_distance_m": cumulative_xy_distance,
+        "final_forward_displacement_m": samples[-1]["forward_displacement_m"],
+        "post_warmup_stalled_fraction": sum(row["stalled"] for row in steady_samples) / len(steady_samples),
+        "max_abs_roll_rad": max(abs(row["base_roll_rad"]) for row in samples),
+        "max_abs_pitch_rad": max(abs(row["base_pitch_rad"]) for row in samples),
         "terminations": termination_counts,
         "tracking_timeseries": str(samples_path),
         "tracking_timeseries_sha256": sha256_file(samples_path),

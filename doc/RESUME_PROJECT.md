@@ -1,5 +1,7 @@
 # Unitree Go2 强化学习项目：简历与面试表述
 
+> 状态更新（2026-09-04）：项目已从早期 flat/rough/MultiTerrain 扩展到七地形 Teacher–Student 路线。Teacher v1 是冻结 baseline；proxy student 的 imitation loss 下降但闭环失败；Teacher v2 完成最终 heading-command 接口对齐；Teacher v3 针对楼梯与 boxes 的异常步态加入 HeightScan、最弱腿参与/对称、负载足滑移和防绕圈约束。三个 V3 专项策略已完成 2,048 env × 5,000 updates 正式训练和候选筛选。当前两个楼梯候选通过数值 gait gate，Boxes 仍待修复。最终统一 recurrent perceptive student 尚未开始，简历和面试中不得宣称七地形统一策略已经完成。
+
 ## 推荐项目标题
 
 **基于 Isaac Lab 的 Unitree Go2 强化学习运动控制与可复现评估**

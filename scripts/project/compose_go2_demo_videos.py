@@ -104,7 +104,14 @@ def draw_dynamic_tracking(
     return result
 
 
-def compose(root: Path, output: Path, title: str) -> dict:
+def compose(
+    root: Path,
+    output: Path,
+    title: str,
+    terrain_names: list[str] | None = None,
+    start_seconds: float = 0.0,
+    duration_seconds: float | None = None,
+) -> dict:
     metadata_paths = sorted(root.glob("*/metadata.json"))
     if not metadata_paths:
         raise RuntimeError(f"no metadata found under {root}")
@@ -120,6 +127,12 @@ def compose(root: Path, output: Path, title: str) -> dict:
         items.sort(key=lambda item: training_seed_order[item["training_seed"]])
     else:
         items.sort(key=lambda item: terrain_order[item["terrain_type"]])
+    if terrain_names:
+        by_terrain = {item["terrain_type"]: item for item in items}
+        missing = [name for name in terrain_names if name not in by_terrain]
+        if missing:
+            raise RuntimeError(f"requested terrain metadata not found: {missing}")
+        items = [by_terrain[name] for name in terrain_names]
     first_video = cv2.VideoCapture(items[0]["video"])
     fps = first_video.get(cv2.CAP_PROP_FPS)
     width = int(first_video.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -132,7 +145,7 @@ def compose(root: Path, output: Path, title: str) -> dict:
     intro = np.full((height, width, 3), 28, dtype=np.uint8)
     command_x = items[0]["command"]["lin_vel_x"]
     scenario_seed = items[0]["evaluation_scenario_seed"]
-    seconds_per_clip = items[0]["simulated_seconds"]
+    seconds_per_clip = duration_seconds or (items[0]["simulated_seconds"] - start_seconds)
     camera_mode = items[0].get("camera", {}).get("mode", "legacy")
     intro_lines = [
         title,
@@ -156,24 +169,31 @@ def compose(root: Path, output: Path, title: str) -> dict:
             max(abs(row["actual_x_mps"]) for row in samples),
         ) * 1.10
         frame_count = max(1, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+        start_frame = min(frame_count - 1, max(0, round(start_seconds * fps)))
+        end_frame = frame_count
+        if duration_seconds is not None:
+            end_frame = min(frame_count, start_frame + round(duration_seconds * fps))
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
         lines = [
             f"{label} | level {item['terrain_level']}",
             f"training seed={item['training_seed']} | evaluation scenario seed={item['evaluation_scenario_seed']}",
             f"post-warmup XY error={item['post_warmup_mean_xy_velocity_error_mps']:.3f} m/s | actual vx={item['post_warmup_mean_actual_x_velocity_mps']:.3f} m/s",
         ]
-        clip_frame_index = 0
+        source_frame_index = start_frame
         while True:
+            if source_frame_index >= end_frame:
+                break
             ok, frame = cap.read()
             if not ok:
                 break
             sample_index = min(
                 len(samples) - 1,
-                int(clip_frame_index * len(samples) / frame_count),
+                int(source_frame_index * len(samples) / frame_count),
             )
             labeled = draw_lines(frame, lines)
             writer.write(draw_dynamic_tracking(labeled, samples, sample_index, velocity_limit))
             total_source_frames += 1
-            clip_frame_index += 1
+            source_frame_index += 1
         cap.release()
     writer.release()
     if not output.is_file() or output.stat().st_size == 0:
@@ -182,6 +202,9 @@ def compose(root: Path, output: Path, title: str) -> dict:
         "title": title,
         "source_root": str(root.resolve()),
         "source_clips": len(items),
+        "terrain_names": [item["terrain_type"] for item in items],
+        "clip_start_seconds": start_seconds,
+        "clip_duration_seconds": duration_seconds,
         "source_frames": total_source_frames,
         "fps": fps,
         "resolution": [width, height],
@@ -197,10 +220,28 @@ def main() -> None:
     parser.add_argument("--source_root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--title", required=True)
+    parser.add_argument(
+        "--terrains",
+        nargs="+",
+        help="Optional ordered terrain subset. By default all available clips are used.",
+    )
+    parser.add_argument("--start_seconds", type=float, default=0.0)
+    parser.add_argument("--duration_seconds", type=float)
     args = parser.parse_args()
+    if args.start_seconds < 0.0:
+        parser.error("--start_seconds must be non-negative")
+    if args.duration_seconds is not None and args.duration_seconds <= 0.0:
+        parser.error("--duration_seconds must be positive")
     if args.output.exists():
         parser.error(f"refusing to overwrite: {args.output}")
-    metadata = compose(args.source_root.resolve(), args.output.resolve(), args.title)
+    metadata = compose(
+        args.source_root.resolve(),
+        args.output.resolve(),
+        args.title,
+        terrain_names=args.terrains,
+        start_seconds=args.start_seconds,
+        duration_seconds=args.duration_seconds,
+    )
     metadata_path = args.output.with_suffix(".json")
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
     args.output.with_suffix(".sha256").write_text(f"{metadata['output_sha256']}  {args.output.name}\n")

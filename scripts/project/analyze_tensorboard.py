@@ -24,6 +24,7 @@ TAGS = {
     "surrogate": "Loss/surrogate",
     "fps": "Perf/total_fps",
 }
+OPTIONAL_TAG_NAMES = {"cmd_level"}
 
 
 def mean(values):
@@ -76,13 +77,17 @@ def main():
     accumulator.Reload()
 
     available = set(accumulator.Tags().get("scalars", []))
-    missing = [tag for tag in TAGS.values() if tag not in available]
+    missing = [
+        tag for name, tag in TAGS.items()
+        if name not in OPTIONAL_TAG_NAMES and tag not in available
+    ]
     if missing:
         raise RuntimeError(f"Missing TensorBoard scalar tags: {missing}")
 
     data = {
         name: [float(event.value) for event in accumulator.Scalars(tag)]
         for name, tag in TAGS.items()
+        if tag in available
     }
 
     lengths = {name: len(values) for name, values in data.items()}
@@ -92,7 +97,9 @@ def main():
     total = len(data["reward"])
     print(f"run_dir: {args.run_dir}")
     print(f"iterations: {total}")
-    print(f"scalar_tags: {len(TAGS)}")
+    print(f"scalar_tags: {len(data)}")
+    omitted_optional = sorted(OPTIONAL_TAG_NAMES - set(data))
+    print(f"optional_tags_absent: {omitted_optional}")
 
     non_finite = [
         (name, index, value)
@@ -121,11 +128,12 @@ def main():
                 "time_out",
                 "bad_orient",
                 "terrain",
-                "cmd_level",
                 "noise",
                 "fps",
             )
         }
+        cmd_level = mean(data["cmd_level"][start:end]) if "cmd_level" in data else None
+        cmd_level_text = f"{cmd_level:8.4f}" if cmd_level is not None else "     n/a"
         print(
             f"{start:04d}-{end - 1:04d} "
             f"{values['reward']:7.3f} "
@@ -135,7 +143,7 @@ def main():
             f"{values['time_out']:8.4f} "
             f"{values['bad_orient']:8.4f} "
             f"{values['terrain']:8.4f} "
-            f"{values['cmd_level']:8.4f} "
+            f"{cmd_level_text} "
             f"{values['noise']:7.4f} "
             f"{values['fps']:7.0f}"
         )

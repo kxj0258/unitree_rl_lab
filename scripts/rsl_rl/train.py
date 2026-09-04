@@ -41,6 +41,24 @@ parser.add_argument("--task", type=str, default=None, choices=tasks, help="Name 
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
 parser.add_argument(
+    "--resume_path",
+    type=str,
+    default=None,
+    help="Exact checkpoint path for cross-experiment transfer. Requires --resume.",
+)
+parser.add_argument(
+    "--reset_optimizer_on_resume",
+    action="store_true",
+    default=False,
+    help="Load policy/normalization weights but initialize a fresh optimizer. Requires --resume.",
+)
+parser.add_argument(
+    "--reset_iteration_on_resume",
+    action="store_true",
+    default=False,
+    help="Reset the new run's iteration numbering to zero after loading weights. Requires --resume.",
+)
+parser.add_argument(
     "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
 )
 # append RSL-RL cli arguments
@@ -49,6 +67,9 @@ cli_args.add_rsl_rl_args(parser)
 AppLauncher.add_app_launcher_args(parser)
 argcomplete.autocomplete(parser)
 args_cli, hydra_args = parser.parse_known_args()
+
+if (args_cli.resume_path or args_cli.reset_optimizer_on_resume or args_cli.reset_iteration_on_resume) and not args_cli.resume:
+    parser.error("--resume_path and resume-reset options require --resume")
 
 # always enable cameras to record video
 if args_cli.video:
@@ -163,7 +184,12 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     # save resume path before creating a new log_dir
     if agent_cfg.resume or agent_cfg.algorithm.class_name == "Distillation":
-        resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
+        if args_cli.resume_path:
+            resume_path = os.path.abspath(os.path.expanduser(args_cli.resume_path))
+            if not os.path.isfile(resume_path):
+                raise FileNotFoundError(f"Exact resume checkpoint not found: {resume_path}")
+        else:
+            resume_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
 
     # wrap for video recording
     if args_cli.video:
@@ -188,7 +214,11 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     if agent_cfg.resume or agent_cfg.algorithm.class_name == "Distillation":
         print(f"[INFO]: Loading model checkpoint from: {resume_path}")
         # load previously trained model
-        runner.load(resume_path)
+        runner.load(resume_path, load_optimizer=not args_cli.reset_optimizer_on_resume)
+        if args_cli.reset_iteration_on_resume:
+            runner.current_learning_iteration = 0
+        print(f"[INFO]: Resume optimizer loaded: {not args_cli.reset_optimizer_on_resume}")
+        print(f"[INFO]: New-run starting iteration: {runner.current_learning_iteration}")
 
     # dump the configuration into log-directory
     dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)

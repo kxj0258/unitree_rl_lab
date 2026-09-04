@@ -1,5 +1,31 @@
 # Go2 Flat、Rough 与 MultiTerrain 扩展复现说明
 
+> 2026-09-04 更新：Teacher v1/v2/v3 与 proxy-student 的精确历史、checkpoint 和不可重复运行清单见最新 V10 handoff。本文中的命令示例用于新输出目录；不要覆盖已有 checkpoint、日志、评估或视频。始终区分 training seed 与 evaluation scenario seed。
+
+## Teacher V3 当前可复现入口
+
+三个专项 V3 task：
+
+```text
+Unitree-Go2-Velocity-TeacherV3-PyramidStairs
+Unitree-Go2-Velocity-TeacherV3-InvertedPyramidStairs
+Unitree-Go2-Velocity-TeacherV3-Boxes
+```
+
+训练由 `scripts/project/train_go2_discrete_teacher_v3_serial.sh` 串行执行。已完成的正式配置为 training seed 42、2,048 environments、5,000 updates、32 steps/environment/update、16 mini-batches；所有策略从零初始化。不要重新运行同名正式训练。
+
+分层候选评估使用 `teacher_v3_stratified`，冻结运行期 curriculum，并覆盖单地形 level 0--9。已完成的九候选入口为 `scripts/project/evaluate_go2_discrete_teacher_v3_candidates.sh`。
+
+双视角 gait gate 使用：
+
+```bash
+TRAINING_SEED=42 EVALUATION_SEED=42 TERRAIN_LEVEL=5 COMMAND_X=0.40 \
+DATE_TAG=<NEW_DATE_TAG> \
+bash scripts/project/record_go2_discrete_teacher_v3_dual_view.sh
+```
+
+脚本分别输出 `terrain_fixed`（任务路径）和 `asset_follow`（步态细节）、tracking CSV、metadata、gait analysis 与 SHA-256。已有 `2026-09-03` 输出不可重复或覆盖。命令执行完毕时不要在交互终端末尾使用 `exit "$status"`，否则终端窗口会关闭。
+
 ## 环境激活
 
 ```bash

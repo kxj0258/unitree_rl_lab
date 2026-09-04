@@ -5,6 +5,24 @@
 [![License](https://img.shields.io/badge/license-Apache2.0-yellow.svg)](https://opensource.org/license/apache-2-0)
 [![Discord](https://img.shields.io/badge/-Discord-5865F2?style=flat&logo=Discord&logoColor=white)](https://discord.gg/ZwcVwxv5rq)
 
+## Go2 Seven-Terrain Teacher–Student Project (2026-09-04)
+
+This fork contains a reproducible Unitree Go2 locomotion research pipeline for seven terrain types: flat, random rough, pyramid/inverted slopes, pyramid/inverted stairs, and boxes. The final deployment command contract is non-negative forward velocity plus a relative heading target limited to ±45 degrees; lateral velocity is fixed to zero, and reverse, lateral, and in-place-turn commands are out of scope.
+
+Completed milestones include:
+
+- flat and rough baselines, a seven-terrain MultiTerrain prototype, HeightScan migration, and audited demonstrations;
+- seven independently trained Teacher v1 policies and stratified candidate/cross-seed/fixed-command evaluation;
+- an online proxy dispatcher and imitation smoke test, followed by a 10,000-update recurrent proxy student; closed-loop evaluation showed that decreasing imitation loss did not produce a usable unified policy;
+- Teacher v2 tasks realigned to relative-heading commands and gait-aware rewards;
+- Teacher v3 remediation for pyramid stairs, inverted pyramid stairs, and boxes with HeightScan, worst-leg participation/symmetry, loaded-foot slip, anti-circling progress, and terrain-specific objectives;
+- Teacher v3 formal training from scratch with training seed 42, 2,048 environments, 5,000 PPO updates, and 327,680,000 transitions per terrain;
+- a 9-checkpoint, 1,800-episode stratified candidate screen at evaluation scenario seed 123 and dual-view gait-gate recordings at seed 42.
+
+Current Teacher v3 candidates are pyramid stairs `model_4999`, inverted pyramid stairs `model_4700`, and boxes `model_4999`. Pyramid and inverted stairs pass the numeric level-5 gait gate; boxes fails that single trajectory through a bad-orientation termination and near-zero signed progress, so it is not accepted yet. Visual gait review remains mandatory before cross-seed and fixed-command validation.
+
+See [current project status](doc/PROJECT_STATUS.md), [Teacher v2/v3 results](doc/RESULTS_TEACHER_V2_V3_2026-09-04.md), [reproduction guide](doc/REPRODUCTION.md), and the [latest V10 handoff](doc/SESSION_HANDOFF_2026-09-04_V10_TEACHER_V2_V3_TRAINING_AND_GAIT_VALIDATION.md).
+
 
 ## Go2 Velocity Baseline Reproduction
 
