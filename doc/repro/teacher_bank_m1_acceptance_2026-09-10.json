@@ -1,0 +1,195 @@
+{
+  "status": "pass",
+  "scope": "registry loading, native parity and complete closed-loop collection",
+  "locomotion_quality_gate": "not imposed; see baseline.csv including every failure",
+  "runs": 7,
+  "episodes": 70,
+  "terrains": [
+    "boxes",
+    "flat",
+    "inverted_pyramid_slope",
+    "inverted_pyramid_stairs",
+    "pyramid_slope",
+    "pyramid_stairs",
+    "random_rough"
+  ],
+  "protocol": {
+    "scenario_seed": 42,
+    "num_envs_per_terrain": 10,
+    "episodes_per_env": 1,
+    "terrain_levels": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "observation_corruption": false,
+    "command_profile": "random"
+  },
+  "per_terrain": [
+    {
+      "terrain": "flat",
+      "profile": "random",
+      "level": "all",
+      "episodes": "10",
+      "mean_xy_velocity_error_mps": "0.03292949386416003",
+      "mean_abs_heading_error_rad": "0.1326460426568927",
+      "mean_target_heading_progress_mps": "0.31302561386264005",
+      "stall_fraction": "0.0038999999999999994",
+      "time_out": "1.0",
+      "base_contact": "0.0",
+      "bad_orientation": "0.0"
+    },
+    {
+      "terrain": "random_rough",
+      "profile": "random",
+      "level": "all",
+      "episodes": "10",
+      "mean_xy_velocity_error_mps": "0.04780712536370264",
+      "mean_abs_heading_error_rad": "0.03551839505165408",
+      "mean_target_heading_progress_mps": "0.31946203034315257",
+      "stall_fraction": "0.006",
+      "time_out": "1.0",
+      "base_contact": "0.0",
+      "bad_orientation": "0.0"
+    },
+    {
+      "terrain": "pyramid_slope",
+      "profile": "random",
+      "level": "all",
+      "episodes": "10",
+      "mean_xy_velocity_error_mps": "0.03639493472572649",
+      "mean_abs_heading_error_rad": "0.03049242096317466",
+      "mean_target_heading_progress_mps": "0.29104966595112347",
+      "stall_fraction": "0.005300000000000001",
+      "time_out": "1.0",
+      "base_contact": "0.0",
+      "bad_orientation": "0.0"
+    },
+    {
+      "terrain": "inverted_pyramid_slope",
+      "profile": "random",
+      "level": "all",
+      "episodes": "10",
+      "mean_xy_velocity_error_mps": "0.03036477828678217",
+      "mean_abs_heading_error_rad": "0.02986311381304695",
+      "mean_target_heading_progress_mps": "0.2852674530240125",
+      "stall_fraction": "0.005200000000000001",
+      "time_out": "1.0",
+      "base_contact": "0.0",
+      "bad_orientation": "0.0"
+    },
+    {
+      "terrain": "pyramid_stairs",
+      "profile": "random",
+      "level": "all",
+      "episodes": "10",
+      "mean_xy_velocity_error_mps": "0.03481968372920237",
+      "mean_abs_heading_error_rad": "0.03779770834473602",
+      "mean_target_heading_progress_mps": "0.2879805641865358",
+      "stall_fraction": "0.0041",
+      "time_out": "1.0",
+      "base_contact": "0.0",
+      "bad_orientation": "0.0"
+    },
+    {
+      "terrain": "inverted_pyramid_stairs",
+      "profile": "random",
+      "level": "all",
+      "episodes": "10",
+      "mean_xy_velocity_error_mps": "0.03417687782681315",
+      "mean_abs_heading_error_rad": "0.03531490751977253",
+      "mean_target_heading_progress_mps": "0.2959883611286525",
+      "stall_fraction": "0.004",
+      "time_out": "1.0",
+      "base_contact": "0.0",
+      "bad_orientation": "0.0"
+    },
+    {
+      "terrain": "boxes",
+      "profile": "random",
+      "level": "all",
+      "episodes": "10",
+      "mean_xy_velocity_error_mps": "0.08163898630921321",
+      "mean_abs_heading_error_rad": "0.05215200456046733",
+      "mean_target_heading_progress_mps": "0.29933749181635794",
+      "stall_fraction": "0.0749",
+      "time_out": "1.0",
+      "base_contact": "0.0",
+      "bad_orientation": "0.0"
+    }
+  ],
+  "adapter_checks": {
+    "boxes_seed42_random": {
+      "status": "pass",
+      "steps_compared": 1000,
+      "max_observation_abs_error": 0.0,
+      "max_action_abs_error": 0.0
+    },
+    "inverted_pyramid_slope_seed42_random": {
+      "status": "pass",
+      "steps_compared": 1000,
+      "max_observation_abs_error": 0.0,
+      "max_action_abs_error": 0.0
+    },
+    "random_rough_seed42_random": {
+      "status": "pass",
+      "steps_compared": 1000,
+      "max_observation_abs_error": 0.0,
+      "max_action_abs_error": 0.0
+    },
+    "flat_seed42_random": {
+      "status": "pass",
+      "steps_compared": 1000,
+      "max_observation_abs_error": 0.0,
+      "max_action_abs_error": 0.0
+    },
+    "pyramid_stairs_seed42_random": {
+      "status": "pass",
+      "steps_compared": 1000,
+      "max_observation_abs_error": 0.0,
+      "max_action_abs_error": 0.0
+    },
+    "pyramid_slope_seed42_random": {
+      "status": "pass",
+      "steps_compared": 1000,
+      "max_observation_abs_error": 0.0,
+      "max_action_abs_error": 0.0
+    },
+    "inverted_pyramid_stairs_seed42_random": {
+      "status": "pass",
+      "steps_compared": 1000,
+      "max_observation_abs_error": 0.0,
+      "max_action_abs_error": 0.0
+    }
+  },
+  "evidence_directory": "evaluation/teacher_bank_m1_seven_smoke_2026-09-10_v1",
+  "evidence_manifest_sha256": "7ff34d10abd895dd7e35c75669e18f41c87ca728a12933083ab053a2502fe455",
+  "source_provenance": {
+    "registry_sha256": "d159e7d107cf13117ebb62bcd857ad7a6a486b24e72797c13add7f98dcf2cc20",
+    "unitree_model_dir": "/home/kxj/rl_ws/unitree_model",
+    "git_commit": "896f60823fe26904d77f14ef1dc8b9798b91185d",
+    "git_status": " M scripts/project/evaluate_go2.py\n?? config/seven_teacher_registry_v1.json\n?? config/seven_teacher_selection_v1.json\n?? doc/SESSION_HANDOFF_2026-09-04_V11_ALL_HISTORY_TEACHER_V3_VALIDATION_AND_GIT_SYNC.md\n?? doc/TEACHER_BANK_M1.md\n?? doc/repro/session_handoff_v11_all_history_teacher_v3_validation_and_git_sync_2026-09-04.sha256\n?? \"doc/unitree_rl_lab\\346\\211\\251\\345\\261\\225\\344\\274\\230\\345\\214\\226\\350\\247\\204\\345\\210\\222.md\"\n?? env_backup_unitree_rl.yml\n?? scripts/project/accept_go2_teacher_bank.py\n?? scripts/project/freeze_go2_teacher_registry.py\n?? source/unitree_rl_lab/unitree_rl_lab/utils/teacher_bank.py\n",
+    "source_sha256": {
+      "scripts/project/accept_go2_teacher_bank.py": "bd9479a09f4f4cf0afd3f7e92c968e54abe3509f48c30b21859d314785222ad2",
+      "scripts/project/evaluate_go2.py": "637ba4640d856e7dbcea39cc2ca911fffba8482b9263f42c6fb878ad17027e91",
+      "source/unitree_rl_lab/unitree_rl_lab/utils/teacher_bank.py": "ee0f40100556ed3cb437d36eb5c796dfe5c9c1b8f8a8e1efef02f1e822666d92"
+    }
+  },
+  "regression_tests": {
+    "count": 6,
+    "status": "pass",
+    "log": "doc/repro/teacher_bank_m1_unit_checks_2026-09-10.txt"
+  },
+  "formal_matrix": {
+    "runs": 21,
+    "episodes": 4200,
+    "status": "planned_not_executed"
+  }
+}

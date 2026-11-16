@@ -9,6 +9,7 @@ import json
 import math
 import sys
 import time
+import traceback
 from collections import Counter, defaultdict
 from importlib.metadata import version
 from pathlib import Path
@@ -54,6 +55,9 @@ parser.add_argument(
     "--episodes_per_env", type=int, default=2, help="Completed episodes required from every environment."
 )
 parser.add_argument("--output_dir", help="New directory for CSV, JSON, and console output.")
+parser.add_argument("--teacher_registry", help="Optional frozen seven-teacher registry for adapter acceptance.")
+parser.add_argument("--teacher_id", help="Terrain key in --teacher_registry; both options must be supplied.")
+parser.add_argument("--capture_policy_sequence", action="store_true", help="Save first two environments' input/action/reset sequence and states for Sim2Sim replay.")
 parser.add_argument(
     "--max_steps",
     type=int,
@@ -89,6 +93,8 @@ if not args_cli.checkpoint:
     parser.error("--checkpoint is required")
 if not args_cli.output_dir:
     parser.error("--output_dir is required")
+if bool(args_cli.teacher_registry) != bool(args_cli.teacher_id):
+    parser.error("--teacher_registry and --teacher_id must be supplied together")
 if args_cli.num_envs <= 0:
     parser.error("--num_envs must be positive")
 if args_cli.episodes_per_env <= 0:
@@ -786,6 +792,16 @@ def main() -> None:
     checkpoint = Path(retrieve_file_path(args_cli.checkpoint)).resolve()
     if not checkpoint.is_file():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint}")
+    teacher_entry = None
+    if args_cli.teacher_registry:
+        from unitree_rl_lab.utils.teacher_bank import load_registry, load_teacher, IsaacObservationBridge
+        project_root = Path(__file__).resolve().parents[2]
+        registry = load_registry(args_cli.teacher_registry, project_root)
+        teacher_entry = registry["teachers"][args_cli.teacher_id]
+        if (project_root / teacher_entry["checkpoint"]).resolve() != checkpoint:
+            raise ValueError("checkpoint differs from frozen teacher selection")
+        if teacher_entry["task"] != args_cli.task or teacher_entry["terrain_protocol"] != args_cli.terrain_protocol:
+            raise ValueError("task/protocol differs from frozen teacher selection")
 
     env_cfg = parse_env_cfg(
         args_cli.task,
@@ -796,6 +812,11 @@ def main() -> None:
     )
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(args_cli.task, args_cli)
     env_cfg.seed = args_cli.seed
+    if teacher_entry is not None:
+        # Parity acceptance needs identical raw states, not two independent
+        # draws of actor observation noise. Legacy evaluation is unchanged.
+        env_cfg.observations.policy.enable_corruption = False
+        env_cfg.observations.critic.enable_corruption = False
     configure_terrain_protocol(env_cfg)
     fixed_command = configure_fixed_command(env_cfg)
     # Evaluations are always headless.  Command arrows are unnecessary and
@@ -825,6 +846,12 @@ def main() -> None:
     # and would reject valid distillation checkpoints produced by a non-PPO optimizer.
     runner.load(str(checkpoint), load_optimizer=False)
     policy = runner.get_inference_policy(device=env.unwrapped.device)
+    adapter_report = None
+    if teacher_entry is not None:
+        adapter_policy = load_teacher(teacher_entry, project_root, env.unwrapped.device)
+        bridge = IsaacObservationBridge(env.unwrapped, teacher_entry)
+        adapter_report = {"status": "running", "steps_compared": 0,
+                          "max_observation_abs_error": 0.0, "max_action_abs_error": 0.0}
 
     observations = env.get_observations()
     if version("rsl-rl-lib").startswith("2.3."):
@@ -908,6 +935,7 @@ def main() -> None:
     power_sum = tensor_zeros(num_envs, device)
     previous_actions: torch.Tensor | None = None
     rows: list[dict] = []
+    replay = defaultdict(list)
 
     output_dir.mkdir(parents=True)
     metadata = {
@@ -926,6 +954,16 @@ def main() -> None:
         "terrain": terrain_metadata,
         "rsl_rl_version": version("rsl-rl-lib"),
     }
+    if teacher_entry is not None:
+        metadata["teacher_bank"] = {
+            "teacher_id": args_cli.teacher_id,
+            "registry_sha256": sha256_file(Path(args_cli.teacher_registry)),
+            "training_seed": teacher_entry["training_seed"],
+            "config_artifacts": teacher_entry["config_artifacts"],
+            "selection_reason": teacher_entry["selection_reason"],
+            "observation_corruption_enabled": False,
+            "adapter_validation": adapter_report,
+        }
     (output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
 
     start = time.perf_counter()
@@ -961,6 +999,31 @@ def main() -> None:
             )
 
             actions = policy(observations)
+            if teacher_entry is not None:
+                adapted = bridge.build()
+                for group in ("policy", "critic"):
+                    torch.testing.assert_close(adapted[group], observations[group], atol=1e-6, rtol=1e-6)
+                    error = float((adapted[group] - observations[group]).abs().max())
+                    adapter_report["max_observation_abs_error"] = max(adapter_report["max_observation_abs_error"], error)
+                adapted_actions = adapter_policy.act_inference(adapted)
+                torch.testing.assert_close(adapted_actions, actions, atol=1e-5, rtol=1e-5)
+                error = float((adapted_actions - actions).abs().max())
+                adapter_report["max_action_abs_error"] = max(adapter_report["max_action_abs_error"], error)
+                adapter_report["steps_compared"] += 1
+                # The adapted teacher actually drives the environment; native
+                # inference is the independently stateful parity reference.
+                actions = adapted_actions
+            if args_cli.capture_policy_sequence:
+                capture = {
+                    "observations": observations["policy"], "actions": actions,
+                    "root_pos_w": robot.data.root_pos_w, "root_quat_w": robot.data.root_quat_w,
+                    "root_lin_vel_b": robot.data.root_lin_vel_b, "root_ang_vel_b": robot.data.root_ang_vel_b,
+                    "joint_pos": robot.data.joint_pos, "joint_vel": robot.data.joint_vel,
+                    "commands": commands, "last_action": raw_env.action_manager.action,
+                    "episode_steps": raw_env.episode_length_buf,
+                }
+                for key, value in capture.items():
+                    replay[key].append(value[:2].detach().cpu().numpy().copy())
             if previous_actions is not None:
                 delta = torch.linalg.vector_norm(actions - previous_actions, dim=1)
                 valid_delta = active & (episode_steps > 0)
@@ -996,11 +1059,15 @@ def main() -> None:
             episode_steps[active] += 1
 
             observations, rewards, dones, _ = env.step(actions)
+            if args_cli.capture_policy_sequence:
+                replay["dones"].append(dones[:2].detach().cpu().numpy().copy())
             # RSL-RL inference keeps recurrent hidden state internally.  Clear
             # only completed environments so a new episode never inherits the
             # previous episode's GRU/LSTM state.  This is a no-op for MLP policies.
             if getattr(runner.alg.policy, "is_recurrent", False):
                 runner.alg.policy.reset(dones)
+            if teacher_entry is not None:
+                adapter_policy.reset(dones)
             reward_sum[active] += rewards[active].double()
             vector_steps += 1
 
@@ -1137,6 +1204,15 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(rows)
 
+    if adapter_report is not None:
+        adapter_report["status"] = "pass"
+        (output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
+    if args_cli.capture_policy_sequence:
+        import numpy as np
+        np.savez_compressed(output_dir / "policy_sequence.npz", **{k: np.stack(v) for k, v in replay.items()},
+                            joint_names=np.asarray(robot.data.joint_names),
+                            checkpoint_sha256=np.asarray(metadata["checkpoint_sha256"]),
+                            control_dt=np.asarray(step_dt))
     summary = summarize(rows, vector_steps, elapsed, metadata)
     (output_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 
@@ -1147,7 +1223,13 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    exit_code = 0
     try:
         main()
+    except Exception:
+        exit_code = 1
+        # Print before Kit shutdown, which may otherwise swallow the traceback.
+        traceback.print_exc()
     finally:
         simulation_app.close()
+    raise SystemExit(exit_code)

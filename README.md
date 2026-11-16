@@ -5,7 +5,13 @@
 [![License](https://img.shields.io/badge/license-Apache2.0-yellow.svg)](https://opensource.org/license/apache-2-0)
 [![Discord](https://img.shields.io/badge/-Discord-5865F2?style=flat&logo=Discord&logoColor=white)](https://discord.gg/ZwcVwxv5rq)
 
-## Go2 Seven-Terrain Teacher–Student Project (2026-09-04)
+## Seven-Teacher Bank M1 (2026-09-10)
+
+The current selected bank uses four Teacher v2 policies and three Teacher v3 policies, with Boxes continuation `model_6000`. Random Rough and Inverted Slope use user-approved `model_4999` replacements for missing historical candidates. The user has accepted the Boxes gait; quantitative operating-envelope validation remains separate.
+
+The [M1 guide](doc/TEACHER_BANK_M1.md) provides a frozen checkpoint/config registry, named observation adapters for the 162/177 and 164/179 actor/critic schemas, CPU artifact/inference audits, and a single Isaac Lab acceptance command. Adapter observations and recurrent actions are compared to native inference at every rollout step; all failure episodes remain in the baseline report. This milestone does not claim a unified student or Sim2Sim completion.
+
+## Go2 Seven-Terrain Teacher–Student Project (2026-09-04 historical snapshot)
 
 This fork contains a reproducible Unitree Go2 locomotion research pipeline for seven terrain types: flat, random rough, pyramid/inverted slopes, pyramid/inverted stairs, and boxes. The final deployment command contract is non-negative forward velocity plus a relative heading target limited to ±45 degrees; lateral velocity is fixed to zero, and reverse, lateral, and in-place-turn commands are out of scope.
 

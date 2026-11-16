@@ -1,0 +1,4544 @@
+{
+  "schema_version": 1,
+  "kind": "go2_seven_teacher_bank",
+  "selection_source": "config/seven_teacher_selection_v1.json",
+  "selection_sha256": "766495fed9a97b23b0057ad83e2dd68ca1f2f268de3c288f58740fcdc694b492",
+  "freeze_git_commit": "896f60823fe26904d77f14ef1dc8b9798b91185d",
+  "scope": "independent teachers in their own tasks; no student or sim2sim claim",
+  "raw_observation_contract": "named tensors before clipping/scaling/normalization; robot articulation joint order",
+  "teachers": {
+    "flat": {
+      "checkpoint": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_flat/2026-08-31_01-10-15_teacher_v2_flat_relativeheading45_fromscratch_trainseed42_env1024_i5000/model_4000.pt",
+      "task": "Unitree-Go2-Velocity-TeacherV2-Flat",
+      "terrain_protocol": "teacher_v2_stratified",
+      "selection_reason": "documented teacher candidate; verify through common acceptance entry",
+      "checkpoint_sha256": "e310e506ed832f0a5cacaf62a189d093431e17938c4ff018b983a609533ba580",
+      "checkpoint_iteration": 4000,
+      "training_seed": 42,
+      "config_artifacts": {
+        "env": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_flat/2026-08-31_01-10-15_teacher_v2_flat_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/env.yaml",
+          "sha256": "aa1433bbbd8402d8ab429236e99c8d6e724307e2a2fc2c0a13520f4f50ca331b"
+        },
+        "agent": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_flat/2026-08-31_01-10-15_teacher_v2_flat_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/agent.yaml",
+          "sha256": "d61aae40bbe40db708116eadfd500edeb2e110c4a6e446f2e12b043f350e5899"
+        },
+        "deploy": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_flat/2026-08-31_01-10-15_teacher_v2_flat_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/deploy.yaml",
+          "sha256": "3a045b9eabb8df584e14eab6eeba1edf29c90e236bfd60a7aef942e3d401ce76"
+        }
+      },
+      "network": {
+        "class_name": "ActorCriticRecurrent",
+        "init_noise_std": 0.8,
+        "noise_std_type": "scalar",
+        "state_dependent_std": false,
+        "actor_obs_normalization": true,
+        "critic_obs_normalization": true,
+        "actor_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "critic_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "activation": "elu",
+        "rnn_type": "gru",
+        "rnn_hidden_dim": 256,
+        "rnn_num_layers": 1
+      },
+      "policy_dim": 162,
+      "critic_dim": 177,
+      "action_dim": 12,
+      "observations": {
+        "policy": [
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          }
+        ],
+        "critic": [
+          {
+            "name": "base_lin_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_lin_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "joint_effort",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_effort",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.01
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          }
+        ]
+      },
+      "control": {
+        "joint_ids_map": [
+          3,
+          0,
+          9,
+          6,
+          4,
+          1,
+          10,
+          7,
+          5,
+          2,
+          11,
+          8
+        ],
+        "step_dt": 0.02,
+        "stiffness": [
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0
+        ],
+        "damping": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "default_joint_pos": [
+          0.1,
+          -0.1,
+          0.1,
+          -0.1,
+          0.8,
+          0.8,
+          1.0,
+          1.0,
+          -1.5,
+          -1.5,
+          -1.5,
+          -1.5
+        ],
+        "actions": {
+          "JointPositionAction": {
+            "clip": [
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ]
+            ],
+            "joint_names": [
+              ".*"
+            ],
+            "scale": [
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25
+            ],
+            "offset": [
+              0.1,
+              -0.1,
+              0.1,
+              -0.1,
+              0.8,
+              0.8,
+              1.0,
+              1.0,
+              -1.5,
+              -1.5,
+              -1.5,
+              -1.5
+            ],
+            "joint_ids": null
+          }
+        }
+      },
+      "command": {
+        "class_type": "unitree_rl_lab.tasks.locomotion.mdp.commands.velocity_command:RelativeHeadingVelocityCommand",
+        "resampling_time_range": [
+          20.0,
+          20.0
+        ],
+        "debug_vis": true,
+        "asset_name": "robot",
+        "heading_command": true,
+        "heading_control_stiffness": 1.0,
+        "rel_standing_envs": 0.05,
+        "rel_heading_envs": 1.0,
+        "ranges": {
+          "lin_vel_x": [
+            0.0,
+            0.8
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.6,
+            0.6
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "goal_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_goal",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "current_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_current",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "limit_ranges": {
+          "lin_vel_x": [
+            0.0,
+            0.8
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.6,
+            0.6
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "relative_heading_range": [
+          -0.7853981633974483,
+          0.7853981633974483
+        ],
+        "max_yaw_rate": 0.6,
+        "minimum_turn_radius": 0.55,
+        "maximum_lateral_acceleration": 0.45,
+        "minimum_turning_speed": 0.1
+      },
+      "height_scanner": {
+        "offset": {
+          "pos": [
+            0.45,
+            0.0,
+            20.0
+          ],
+          "rot": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "ray_alignment": "yaw",
+        "pattern_cfg": {
+          "func": "isaaclab.sensors.ray_caster.patterns.patterns:grid_pattern",
+          "resolution": 0.1,
+          "size": [
+            1.2,
+            0.8
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "ordering": "xy"
+        },
+        "update_period": 0.02,
+        "mesh_prim_paths": [
+          "/World/ground"
+        ]
+      },
+      "terrain": {
+        "flat": {
+          "function": "isaaclab.terrains.trimesh.mesh_terrains:flat_terrain",
+          "proportion": 1.0,
+          "size": [
+            8.0,
+            8.0
+          ],
+          "flat_patch_sampling": null
+        }
+      },
+      "acceptance_status": "frozen_selection_pending_registry_closed_loop_acceptance"
+    },
+    "random_rough": {
+      "checkpoint": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_random_rough/2026-08-31_14-52-06_teacher_v2_random_rough_relativeheading45_fromscratch_trainseed42_env1024_i5000/model_4999.pt",
+      "task": "Unitree-Go2-Velocity-TeacherV2-RandomRough",
+      "terrain_protocol": "teacher_v2_stratified",
+      "selection_reason": "user-approved replacement for missing historical candidate; re-evaluate",
+      "checkpoint_sha256": "6f049732d25dba05093ee794d275245201c4b4b8cd78f597d271d8947d397af2",
+      "checkpoint_iteration": 4999,
+      "training_seed": 42,
+      "config_artifacts": {
+        "env": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_random_rough/2026-08-31_14-52-06_teacher_v2_random_rough_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/env.yaml",
+          "sha256": "eef7843a14ab9faeb976e66d12b6b5ae85c9613fe8d645b9eb0bc6c325419830"
+        },
+        "agent": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_random_rough/2026-08-31_14-52-06_teacher_v2_random_rough_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/agent.yaml",
+          "sha256": "6b94752d66d8d7ccf3f57be097bc5f9e6b2dceac814888c4ef8817ad42049f60"
+        },
+        "deploy": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_random_rough/2026-08-31_14-52-06_teacher_v2_random_rough_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/deploy.yaml",
+          "sha256": "b90e96a70e2bc48ad5a95d81939585946507920f25a03e92429d39bcf7cf28a4"
+        }
+      },
+      "network": {
+        "class_name": "ActorCriticRecurrent",
+        "init_noise_std": 0.8,
+        "noise_std_type": "scalar",
+        "state_dependent_std": false,
+        "actor_obs_normalization": true,
+        "critic_obs_normalization": true,
+        "actor_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "critic_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "activation": "elu",
+        "rnn_type": "gru",
+        "rnn_hidden_dim": 256,
+        "rnn_num_layers": 1
+      },
+      "policy_dim": 162,
+      "critic_dim": 177,
+      "action_dim": 12,
+      "observations": {
+        "policy": [
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          }
+        ],
+        "critic": [
+          {
+            "name": "base_lin_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_lin_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "joint_effort",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_effort",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.01
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          }
+        ]
+      },
+      "control": {
+        "joint_ids_map": [
+          3,
+          0,
+          9,
+          6,
+          4,
+          1,
+          10,
+          7,
+          5,
+          2,
+          11,
+          8
+        ],
+        "step_dt": 0.02,
+        "stiffness": [
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0
+        ],
+        "damping": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "default_joint_pos": [
+          0.1,
+          -0.1,
+          0.1,
+          -0.1,
+          0.8,
+          0.8,
+          1.0,
+          1.0,
+          -1.5,
+          -1.5,
+          -1.5,
+          -1.5
+        ],
+        "actions": {
+          "JointPositionAction": {
+            "clip": [
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ]
+            ],
+            "joint_names": [
+              ".*"
+            ],
+            "scale": [
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25
+            ],
+            "offset": [
+              0.1,
+              -0.1,
+              0.1,
+              -0.1,
+              0.8,
+              0.8,
+              1.0,
+              1.0,
+              -1.5,
+              -1.5,
+              -1.5,
+              -1.5
+            ],
+            "joint_ids": null
+          }
+        }
+      },
+      "command": {
+        "class_type": "unitree_rl_lab.tasks.locomotion.mdp.commands.velocity_command:RelativeHeadingVelocityCommand",
+        "resampling_time_range": [
+          20.0,
+          20.0
+        ],
+        "debug_vis": true,
+        "asset_name": "robot",
+        "heading_command": true,
+        "heading_control_stiffness": 1.0,
+        "rel_standing_envs": 0.0,
+        "rel_heading_envs": 1.0,
+        "ranges": {
+          "lin_vel_x": [
+            0.1,
+            0.65
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.5,
+            0.5
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "goal_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_goal",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "current_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_current",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "limit_ranges": {
+          "lin_vel_x": [
+            0.1,
+            0.65
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.5,
+            0.5
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "relative_heading_range": [
+          -0.7853981633974483,
+          0.7853981633974483
+        ],
+        "max_yaw_rate": 0.5,
+        "minimum_turn_radius": 0.55,
+        "maximum_lateral_acceleration": 0.45,
+        "minimum_turning_speed": 0.1
+      },
+      "height_scanner": {
+        "offset": {
+          "pos": [
+            0.45,
+            0.0,
+            20.0
+          ],
+          "rot": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "ray_alignment": "yaw",
+        "pattern_cfg": {
+          "func": "isaaclab.sensors.ray_caster.patterns.patterns:grid_pattern",
+          "resolution": 0.1,
+          "size": [
+            1.2,
+            0.8
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "ordering": "xy"
+        },
+        "update_period": 0.02,
+        "mesh_prim_paths": [
+          "/World/ground"
+        ]
+      },
+      "terrain": {
+        "random_rough": {
+          "function": "isaaclab.terrains.height_field.hf_terrains:random_uniform_terrain",
+          "proportion": 1.0,
+          "size": [
+            8.0,
+            8.0
+          ],
+          "flat_patch_sampling": null,
+          "border_width": 0.25,
+          "horizontal_scale": 0.1,
+          "vertical_scale": 0.005,
+          "slope_threshold": 0.75,
+          "noise_range": [
+            0.005,
+            0.08
+          ],
+          "noise_step": 0.005,
+          "downsampled_scale": null
+        }
+      },
+      "acceptance_status": "frozen_selection_pending_registry_closed_loop_acceptance"
+    },
+    "pyramid_slope": {
+      "checkpoint": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_pyramid_slope/2026-08-31_20-30-02_teacher_v2_pyramid_slope_relativeheading45_fromscratch_trainseed42_env1024_i5000/model_4999.pt",
+      "task": "Unitree-Go2-Velocity-TeacherV2-PyramidSlope",
+      "terrain_protocol": "teacher_v2_stratified",
+      "selection_reason": "documented teacher candidate; verify through common acceptance entry",
+      "checkpoint_sha256": "e525449d51f41b672df6033e07b57a90b5c9b513f956f0ed12627d07bbeb0da7",
+      "checkpoint_iteration": 4999,
+      "training_seed": 42,
+      "config_artifacts": {
+        "env": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_pyramid_slope/2026-08-31_20-30-02_teacher_v2_pyramid_slope_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/env.yaml",
+          "sha256": "14839312b9a27c04bb54ef792f62342e02a53794b621d599bfa6e593ac1faa4e"
+        },
+        "agent": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_pyramid_slope/2026-08-31_20-30-02_teacher_v2_pyramid_slope_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/agent.yaml",
+          "sha256": "e42ed01753a2ef3277da2cd90c5d2e6758912b1e3c4e039721803217c68563d4"
+        },
+        "deploy": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_pyramid_slope/2026-08-31_20-30-02_teacher_v2_pyramid_slope_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/deploy.yaml",
+          "sha256": "73095587ac706a02877673cadee1226e5aa6579bf7f265d6fb813a0b35cd18e0"
+        }
+      },
+      "network": {
+        "class_name": "ActorCriticRecurrent",
+        "init_noise_std": 0.8,
+        "noise_std_type": "scalar",
+        "state_dependent_std": false,
+        "actor_obs_normalization": true,
+        "critic_obs_normalization": true,
+        "actor_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "critic_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "activation": "elu",
+        "rnn_type": "gru",
+        "rnn_hidden_dim": 256,
+        "rnn_num_layers": 1
+      },
+      "policy_dim": 162,
+      "critic_dim": 177,
+      "action_dim": 12,
+      "observations": {
+        "policy": [
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          }
+        ],
+        "critic": [
+          {
+            "name": "base_lin_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_lin_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "joint_effort",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_effort",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.01
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          }
+        ]
+      },
+      "control": {
+        "joint_ids_map": [
+          3,
+          0,
+          9,
+          6,
+          4,
+          1,
+          10,
+          7,
+          5,
+          2,
+          11,
+          8
+        ],
+        "step_dt": 0.02,
+        "stiffness": [
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0
+        ],
+        "damping": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "default_joint_pos": [
+          0.1,
+          -0.1,
+          0.1,
+          -0.1,
+          0.8,
+          0.8,
+          1.0,
+          1.0,
+          -1.5,
+          -1.5,
+          -1.5,
+          -1.5
+        ],
+        "actions": {
+          "JointPositionAction": {
+            "clip": [
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ]
+            ],
+            "joint_names": [
+              ".*"
+            ],
+            "scale": [
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25
+            ],
+            "offset": [
+              0.1,
+              -0.1,
+              0.1,
+              -0.1,
+              0.8,
+              0.8,
+              1.0,
+              1.0,
+              -1.5,
+              -1.5,
+              -1.5,
+              -1.5
+            ],
+            "joint_ids": null
+          }
+        }
+      },
+      "command": {
+        "class_type": "unitree_rl_lab.tasks.locomotion.mdp.commands.velocity_command:RelativeHeadingVelocityCommand",
+        "resampling_time_range": [
+          20.0,
+          20.0
+        ],
+        "debug_vis": true,
+        "asset_name": "robot",
+        "heading_command": true,
+        "heading_control_stiffness": 1.0,
+        "rel_standing_envs": 0.0,
+        "rel_heading_envs": 1.0,
+        "ranges": {
+          "lin_vel_x": [
+            0.1,
+            0.55
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.45,
+            0.45
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "goal_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_goal",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "current_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_current",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "limit_ranges": {
+          "lin_vel_x": [
+            0.1,
+            0.55
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.45,
+            0.45
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "relative_heading_range": [
+          -0.7853981633974483,
+          0.7853981633974483
+        ],
+        "max_yaw_rate": 0.45,
+        "minimum_turn_radius": 0.55,
+        "maximum_lateral_acceleration": 0.45,
+        "minimum_turning_speed": 0.1
+      },
+      "height_scanner": {
+        "offset": {
+          "pos": [
+            0.45,
+            0.0,
+            20.0
+          ],
+          "rot": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "ray_alignment": "yaw",
+        "pattern_cfg": {
+          "func": "isaaclab.sensors.ray_caster.patterns.patterns:grid_pattern",
+          "resolution": 0.1,
+          "size": [
+            1.2,
+            0.8
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "ordering": "xy"
+        },
+        "update_period": 0.02,
+        "mesh_prim_paths": [
+          "/World/ground"
+        ]
+      },
+      "terrain": {
+        "pyramid_slope": {
+          "function": "isaaclab.terrains.height_field.hf_terrains:pyramid_sloped_terrain",
+          "proportion": 1.0,
+          "size": [
+            8.0,
+            8.0
+          ],
+          "flat_patch_sampling": null,
+          "border_width": 0.25,
+          "horizontal_scale": 0.1,
+          "vertical_scale": 0.005,
+          "slope_threshold": 0.75,
+          "slope_range": [
+            0.02,
+            0.35
+          ],
+          "platform_width": 2.0,
+          "inverted": false
+        }
+      },
+      "acceptance_status": "frozen_selection_pending_registry_closed_loop_acceptance"
+    },
+    "inverted_pyramid_slope": {
+      "checkpoint": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_inverted_pyramid_slope/2026-09-01_00-51-39_teacher_v2_inverted_pyramid_slope_relativeheading45_fromscratch_trainseed42_env1024_i5000/model_4999.pt",
+      "task": "Unitree-Go2-Velocity-TeacherV2-InvertedPyramidSlope",
+      "terrain_protocol": "teacher_v2_stratified",
+      "selection_reason": "user-approved replacement for missing historical candidate; re-evaluate",
+      "checkpoint_sha256": "424c5e91bff004608df168c709935c527b6bfaa8ced0bd572b6d88589b8fd4cb",
+      "checkpoint_iteration": 4999,
+      "training_seed": 42,
+      "config_artifacts": {
+        "env": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_inverted_pyramid_slope/2026-09-01_00-51-39_teacher_v2_inverted_pyramid_slope_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/env.yaml",
+          "sha256": "83021628057748a161a830b5d3d16c2c96519a31f272ec5f62ce22fb3e8229c9"
+        },
+        "agent": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_inverted_pyramid_slope/2026-09-01_00-51-39_teacher_v2_inverted_pyramid_slope_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/agent.yaml",
+          "sha256": "b65c5d68a32a2197798c3f9ba4f9bd971ca3d7cd73dea1a09b5d0209f42f0e91"
+        },
+        "deploy": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v2_inverted_pyramid_slope/2026-09-01_00-51-39_teacher_v2_inverted_pyramid_slope_relativeheading45_fromscratch_trainseed42_env1024_i5000/params/deploy.yaml",
+          "sha256": "73095587ac706a02877673cadee1226e5aa6579bf7f265d6fb813a0b35cd18e0"
+        }
+      },
+      "network": {
+        "class_name": "ActorCriticRecurrent",
+        "init_noise_std": 0.8,
+        "noise_std_type": "scalar",
+        "state_dependent_std": false,
+        "actor_obs_normalization": true,
+        "critic_obs_normalization": true,
+        "actor_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "critic_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "activation": "elu",
+        "rnn_type": "gru",
+        "rnn_hidden_dim": 256,
+        "rnn_num_layers": 1
+      },
+      "policy_dim": 162,
+      "critic_dim": 177,
+      "action_dim": 12,
+      "observations": {
+        "policy": [
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          }
+        ],
+        "critic": [
+          {
+            "name": "base_lin_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_lin_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "joint_effort",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_effort",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.01
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          }
+        ]
+      },
+      "control": {
+        "joint_ids_map": [
+          3,
+          0,
+          9,
+          6,
+          4,
+          1,
+          10,
+          7,
+          5,
+          2,
+          11,
+          8
+        ],
+        "step_dt": 0.02,
+        "stiffness": [
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0
+        ],
+        "damping": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "default_joint_pos": [
+          0.1,
+          -0.1,
+          0.1,
+          -0.1,
+          0.8,
+          0.8,
+          1.0,
+          1.0,
+          -1.5,
+          -1.5,
+          -1.5,
+          -1.5
+        ],
+        "actions": {
+          "JointPositionAction": {
+            "clip": [
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ]
+            ],
+            "joint_names": [
+              ".*"
+            ],
+            "scale": [
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25
+            ],
+            "offset": [
+              0.1,
+              -0.1,
+              0.1,
+              -0.1,
+              0.8,
+              0.8,
+              1.0,
+              1.0,
+              -1.5,
+              -1.5,
+              -1.5,
+              -1.5
+            ],
+            "joint_ids": null
+          }
+        }
+      },
+      "command": {
+        "class_type": "unitree_rl_lab.tasks.locomotion.mdp.commands.velocity_command:RelativeHeadingVelocityCommand",
+        "resampling_time_range": [
+          20.0,
+          20.0
+        ],
+        "debug_vis": true,
+        "asset_name": "robot",
+        "heading_command": true,
+        "heading_control_stiffness": 1.0,
+        "rel_standing_envs": 0.0,
+        "rel_heading_envs": 1.0,
+        "ranges": {
+          "lin_vel_x": [
+            0.1,
+            0.55
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.45,
+            0.45
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "goal_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_goal",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "current_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_current",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "limit_ranges": {
+          "lin_vel_x": [
+            0.1,
+            0.55
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.45,
+            0.45
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "relative_heading_range": [
+          -0.7853981633974483,
+          0.7853981633974483
+        ],
+        "max_yaw_rate": 0.45,
+        "minimum_turn_radius": 0.55,
+        "maximum_lateral_acceleration": 0.45,
+        "minimum_turning_speed": 0.1
+      },
+      "height_scanner": {
+        "offset": {
+          "pos": [
+            0.45,
+            0.0,
+            20.0
+          ],
+          "rot": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "ray_alignment": "yaw",
+        "pattern_cfg": {
+          "func": "isaaclab.sensors.ray_caster.patterns.patterns:grid_pattern",
+          "resolution": 0.1,
+          "size": [
+            1.2,
+            0.8
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "ordering": "xy"
+        },
+        "update_period": 0.02,
+        "mesh_prim_paths": [
+          "/World/ground"
+        ]
+      },
+      "terrain": {
+        "inverted_pyramid_slope": {
+          "function": "isaaclab.terrains.height_field.hf_terrains:pyramid_sloped_terrain",
+          "proportion": 1.0,
+          "size": [
+            8.0,
+            8.0
+          ],
+          "flat_patch_sampling": null,
+          "border_width": 0.25,
+          "horizontal_scale": 0.1,
+          "vertical_scale": 0.005,
+          "slope_threshold": 0.75,
+          "slope_range": [
+            0.02,
+            0.35
+          ],
+          "platform_width": 2.0,
+          "inverted": true
+        }
+      },
+      "acceptance_status": "frozen_selection_pending_registry_closed_loop_acceptance"
+    },
+    "pyramid_stairs": {
+      "checkpoint": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_pyramid_stairs/2026-09-02_10-57-34_teacher_v3_pyramid_stairs_worstleg_symmetry_heightscan_anticircle_fromscratch_formal_trainseed42_env2048_i5000_env2048_i5000_budget327m_fromscratch_v1/model_4999.pt",
+      "task": "Unitree-Go2-Velocity-TeacherV3-PyramidStairs",
+      "terrain_protocol": "teacher_v3_stratified",
+      "selection_reason": "documented teacher candidate; verify through common acceptance entry",
+      "checkpoint_sha256": "a46577f3f52c3faa4afd69a8a9d238af4717f347f91946d3b4d1c530caabb196",
+      "checkpoint_iteration": 4999,
+      "training_seed": 42,
+      "config_artifacts": {
+        "env": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_pyramid_stairs/2026-09-02_10-57-34_teacher_v3_pyramid_stairs_worstleg_symmetry_heightscan_anticircle_fromscratch_formal_trainseed42_env2048_i5000_env2048_i5000_budget327m_fromscratch_v1/params/env.yaml",
+          "sha256": "08ec81b9a6ac85c906847d28cacb8a72fe613a81e4a2edcacd1edd45bfa278b8"
+        },
+        "agent": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_pyramid_stairs/2026-09-02_10-57-34_teacher_v3_pyramid_stairs_worstleg_symmetry_heightscan_anticircle_fromscratch_formal_trainseed42_env2048_i5000_env2048_i5000_budget327m_fromscratch_v1/params/agent.yaml",
+          "sha256": "89685a54a13a9a102ed2725a4d1529bf06c5e1e26c5272452e36f549dcb56234"
+        },
+        "deploy": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_pyramid_stairs/2026-09-02_10-57-34_teacher_v3_pyramid_stairs_worstleg_symmetry_heightscan_anticircle_fromscratch_formal_trainseed42_env2048_i5000_env2048_i5000_budget327m_fromscratch_v1/params/deploy.yaml",
+          "sha256": "7d0c95aa3fdf5b2d43935c7f178bc3ee42b31f41d2a2f813fb7791342d7f2c4a"
+        }
+      },
+      "network": {
+        "class_name": "ActorCriticRecurrent",
+        "init_noise_std": 0.8,
+        "noise_std_type": "scalar",
+        "state_dependent_std": false,
+        "actor_obs_normalization": true,
+        "critic_obs_normalization": true,
+        "actor_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "critic_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "activation": "elu",
+        "rnn_type": "gru",
+        "rnn_hidden_dim": 256,
+        "rnn_num_layers": 1
+      },
+      "policy_dim": 164,
+      "critic_dim": 179,
+      "action_dim": 12,
+      "observations": {
+        "policy": [
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          },
+          {
+            "name": "gait_clock",
+            "dim": 2,
+            "func": "unitree_rl_lab.tasks.locomotion.mdp.observations:gait_phase",
+            "params": {
+              "period": 0.75,
+              "command_name": "base_velocity",
+              "minimum_period": 0.55,
+              "minimum_speed": 0.15,
+              "maximum_speed": 0.5
+            },
+            "clip": null,
+            "scale": null
+          }
+        ],
+        "critic": [
+          {
+            "name": "base_lin_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_lin_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "joint_effort",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_effort",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.01
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          },
+          {
+            "name": "gait_clock",
+            "dim": 2,
+            "func": "unitree_rl_lab.tasks.locomotion.mdp.observations:gait_phase",
+            "params": {
+              "period": 0.75,
+              "command_name": "base_velocity",
+              "minimum_period": 0.55,
+              "minimum_speed": 0.15,
+              "maximum_speed": 0.5
+            },
+            "clip": null,
+            "scale": null
+          }
+        ]
+      },
+      "control": {
+        "joint_ids_map": [
+          3,
+          0,
+          9,
+          6,
+          4,
+          1,
+          10,
+          7,
+          5,
+          2,
+          11,
+          8
+        ],
+        "step_dt": 0.02,
+        "stiffness": [
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0
+        ],
+        "damping": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "default_joint_pos": [
+          0.1,
+          -0.1,
+          0.1,
+          -0.1,
+          0.8,
+          0.8,
+          1.0,
+          1.0,
+          -1.5,
+          -1.5,
+          -1.5,
+          -1.5
+        ],
+        "actions": {
+          "JointPositionAction": {
+            "clip": [
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ]
+            ],
+            "joint_names": [
+              ".*"
+            ],
+            "scale": [
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25
+            ],
+            "offset": [
+              0.1,
+              -0.1,
+              0.1,
+              -0.1,
+              0.8,
+              0.8,
+              1.0,
+              1.0,
+              -1.5,
+              -1.5,
+              -1.5,
+              -1.5
+            ],
+            "joint_ids": null
+          }
+        }
+      },
+      "command": {
+        "class_type": "unitree_rl_lab.tasks.locomotion.mdp.commands.velocity_command:RelativeHeadingVelocityCommand",
+        "resampling_time_range": [
+          20.0,
+          20.0
+        ],
+        "debug_vis": true,
+        "asset_name": "robot",
+        "heading_command": true,
+        "heading_control_stiffness": 1.0,
+        "rel_standing_envs": 0.0,
+        "rel_heading_envs": 1.0,
+        "ranges": {
+          "lin_vel_x": [
+            0.15,
+            0.5
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.3,
+            0.3
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "goal_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_goal",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "current_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_current",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "limit_ranges": {
+          "lin_vel_x": [
+            0.15,
+            0.5
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.3,
+            0.3
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "relative_heading_range": [
+          -0.7853981633974483,
+          0.7853981633974483
+        ],
+        "max_yaw_rate": 0.3,
+        "minimum_turn_radius": 0.55,
+        "maximum_lateral_acceleration": 0.45,
+        "minimum_turning_speed": 0.1
+      },
+      "height_scanner": {
+        "offset": {
+          "pos": [
+            0.3,
+            0.0,
+            20.0
+          ],
+          "rot": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "ray_alignment": "yaw",
+        "pattern_cfg": {
+          "func": "isaaclab.sensors.ray_caster.patterns.patterns:grid_pattern",
+          "resolution": 0.1,
+          "size": [
+            1.2,
+            0.8
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "ordering": "xy"
+        },
+        "update_period": 0.02,
+        "mesh_prim_paths": [
+          "/World/ground"
+        ]
+      },
+      "terrain": {
+        "pyramid_stairs": {
+          "function": "isaaclab.terrains.trimesh.mesh_terrains:pyramid_stairs_terrain",
+          "proportion": 1.0,
+          "size": [
+            8.0,
+            8.0
+          ],
+          "flat_patch_sampling": null,
+          "border_width": 1.0,
+          "step_height_range": [
+            0.02,
+            0.14
+          ],
+          "step_width": 0.3,
+          "platform_width": 3.0,
+          "holes": false
+        }
+      },
+      "acceptance_status": "frozen_selection_pending_registry_closed_loop_acceptance"
+    },
+    "inverted_pyramid_stairs": {
+      "checkpoint": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_inverted_pyramid_stairs/2026-09-02_16-54-00_teacher_v3_inverted_pyramid_stairs_worstleg_symmetry_heightscan_ascent_anticircle_fromscratch_formal_trainseed42_env2048_i5000_env2048_i5000_budget327m_fromscratch_v1/model_4700.pt",
+      "task": "Unitree-Go2-Velocity-TeacherV3-InvertedPyramidStairs",
+      "terrain_protocol": "teacher_v3_stratified",
+      "selection_reason": "documented teacher candidate; verify through common acceptance entry",
+      "checkpoint_sha256": "de8250790ae1e04437d014803edce17771045cd80e73735e37b81e79326fc640",
+      "checkpoint_iteration": 4700,
+      "training_seed": 42,
+      "config_artifacts": {
+        "env": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_inverted_pyramid_stairs/2026-09-02_16-54-00_teacher_v3_inverted_pyramid_stairs_worstleg_symmetry_heightscan_ascent_anticircle_fromscratch_formal_trainseed42_env2048_i5000_env2048_i5000_budget327m_fromscratch_v1/params/env.yaml",
+          "sha256": "0e3dc4446b7e7c98e4e9e7490806253693555cc5a454a706d90193f83bca47c6"
+        },
+        "agent": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_inverted_pyramid_stairs/2026-09-02_16-54-00_teacher_v3_inverted_pyramid_stairs_worstleg_symmetry_heightscan_ascent_anticircle_fromscratch_formal_trainseed42_env2048_i5000_env2048_i5000_budget327m_fromscratch_v1/params/agent.yaml",
+          "sha256": "28242105e59270f397457221c26901e1794ec534dd336963b17c1de7a561dcf6"
+        },
+        "deploy": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_inverted_pyramid_stairs/2026-09-02_16-54-00_teacher_v3_inverted_pyramid_stairs_worstleg_symmetry_heightscan_ascent_anticircle_fromscratch_formal_trainseed42_env2048_i5000_env2048_i5000_budget327m_fromscratch_v1/params/deploy.yaml",
+          "sha256": "7d0c95aa3fdf5b2d43935c7f178bc3ee42b31f41d2a2f813fb7791342d7f2c4a"
+        }
+      },
+      "network": {
+        "class_name": "ActorCriticRecurrent",
+        "init_noise_std": 0.8,
+        "noise_std_type": "scalar",
+        "state_dependent_std": false,
+        "actor_obs_normalization": true,
+        "critic_obs_normalization": true,
+        "actor_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "critic_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "activation": "elu",
+        "rnn_type": "gru",
+        "rnn_hidden_dim": 256,
+        "rnn_num_layers": 1
+      },
+      "policy_dim": 164,
+      "critic_dim": 179,
+      "action_dim": 12,
+      "observations": {
+        "policy": [
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          },
+          {
+            "name": "gait_clock",
+            "dim": 2,
+            "func": "unitree_rl_lab.tasks.locomotion.mdp.observations:gait_phase",
+            "params": {
+              "period": 0.75,
+              "command_name": "base_velocity",
+              "minimum_period": 0.55,
+              "minimum_speed": 0.15,
+              "maximum_speed": 0.5
+            },
+            "clip": null,
+            "scale": null
+          }
+        ],
+        "critic": [
+          {
+            "name": "base_lin_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_lin_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "joint_effort",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_effort",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.01
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          },
+          {
+            "name": "gait_clock",
+            "dim": 2,
+            "func": "unitree_rl_lab.tasks.locomotion.mdp.observations:gait_phase",
+            "params": {
+              "period": 0.75,
+              "command_name": "base_velocity",
+              "minimum_period": 0.55,
+              "minimum_speed": 0.15,
+              "maximum_speed": 0.5
+            },
+            "clip": null,
+            "scale": null
+          }
+        ]
+      },
+      "control": {
+        "joint_ids_map": [
+          3,
+          0,
+          9,
+          6,
+          4,
+          1,
+          10,
+          7,
+          5,
+          2,
+          11,
+          8
+        ],
+        "step_dt": 0.02,
+        "stiffness": [
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0
+        ],
+        "damping": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "default_joint_pos": [
+          0.1,
+          -0.1,
+          0.1,
+          -0.1,
+          0.8,
+          0.8,
+          1.0,
+          1.0,
+          -1.5,
+          -1.5,
+          -1.5,
+          -1.5
+        ],
+        "actions": {
+          "JointPositionAction": {
+            "clip": [
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ]
+            ],
+            "joint_names": [
+              ".*"
+            ],
+            "scale": [
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25
+            ],
+            "offset": [
+              0.1,
+              -0.1,
+              0.1,
+              -0.1,
+              0.8,
+              0.8,
+              1.0,
+              1.0,
+              -1.5,
+              -1.5,
+              -1.5,
+              -1.5
+            ],
+            "joint_ids": null
+          }
+        }
+      },
+      "command": {
+        "class_type": "unitree_rl_lab.tasks.locomotion.mdp.commands.velocity_command:RelativeHeadingVelocityCommand",
+        "resampling_time_range": [
+          20.0,
+          20.0
+        ],
+        "debug_vis": true,
+        "asset_name": "robot",
+        "heading_command": true,
+        "heading_control_stiffness": 1.0,
+        "rel_standing_envs": 0.0,
+        "rel_heading_envs": 1.0,
+        "ranges": {
+          "lin_vel_x": [
+            0.15,
+            0.5
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.3,
+            0.3
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "goal_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_goal",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "current_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_current",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "limit_ranges": {
+          "lin_vel_x": [
+            0.15,
+            0.5
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.3,
+            0.3
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "relative_heading_range": [
+          -0.7853981633974483,
+          0.7853981633974483
+        ],
+        "max_yaw_rate": 0.3,
+        "minimum_turn_radius": 0.55,
+        "maximum_lateral_acceleration": 0.45,
+        "minimum_turning_speed": 0.1
+      },
+      "height_scanner": {
+        "offset": {
+          "pos": [
+            0.3,
+            0.0,
+            20.0
+          ],
+          "rot": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "ray_alignment": "yaw",
+        "pattern_cfg": {
+          "func": "isaaclab.sensors.ray_caster.patterns.patterns:grid_pattern",
+          "resolution": 0.1,
+          "size": [
+            1.2,
+            0.8
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "ordering": "xy"
+        },
+        "update_period": 0.02,
+        "mesh_prim_paths": [
+          "/World/ground"
+        ]
+      },
+      "terrain": {
+        "inverted_pyramid_stairs": {
+          "function": "isaaclab.terrains.trimesh.mesh_terrains:inverted_pyramid_stairs_terrain",
+          "proportion": 1.0,
+          "size": [
+            8.0,
+            8.0
+          ],
+          "flat_patch_sampling": null,
+          "border_width": 1.0,
+          "step_height_range": [
+            0.02,
+            0.14
+          ],
+          "step_width": 0.3,
+          "platform_width": 3.0,
+          "holes": false
+        }
+      },
+      "acceptance_status": "frozen_selection_pending_registry_closed_loop_acceptance"
+    },
+    "boxes": {
+      "checkpoint": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_boxes/2026-09-08_15-04-48_teacher_v3_boxes_worstleg_symmetry_edgeaware_mixedlevel_heightscan_anticircle_continue_from4999_addi3000_total8000_trainseed42_env2048/model_6000.pt",
+      "task": "Unitree-Go2-Velocity-TeacherV3-Boxes",
+      "terrain_protocol": "teacher_v3_stratified",
+      "selection_reason": "user-selected model6000; gait accepted by user; quantify working envelope",
+      "checkpoint_sha256": "76fae363f6502d93dd6a12b7b3dadc4e2cf886a062d21ea6c4ffd24ecbb1b0dd",
+      "checkpoint_iteration": 6000,
+      "training_seed": 42,
+      "config_artifacts": {
+        "env": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_boxes/2026-09-08_15-04-48_teacher_v3_boxes_worstleg_symmetry_edgeaware_mixedlevel_heightscan_anticircle_continue_from4999_addi3000_total8000_trainseed42_env2048/params/env.yaml",
+          "sha256": "a38b2cc69130176e912800fbea1cab57439ba7221a046708e812c5b9dc3c7e27"
+        },
+        "agent": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_boxes/2026-09-08_15-04-48_teacher_v3_boxes_worstleg_symmetry_edgeaware_mixedlevel_heightscan_anticircle_continue_from4999_addi3000_total8000_trainseed42_env2048/params/agent.yaml",
+          "sha256": "1fafe8301febac864cd1b189013a2f6efec8bb72118495187e15c1ab818862de"
+        },
+        "deploy": {
+          "path": "logs/rsl_rl/unitree_go2_velocity_teacher_v3_boxes/2026-09-08_15-04-48_teacher_v3_boxes_worstleg_symmetry_edgeaware_mixedlevel_heightscan_anticircle_continue_from4999_addi3000_total8000_trainseed42_env2048/params/deploy.yaml",
+          "sha256": "7d0c95aa3fdf5b2d43935c7f178bc3ee42b31f41d2a2f813fb7791342d7f2c4a"
+        }
+      },
+      "network": {
+        "class_name": "ActorCriticRecurrent",
+        "init_noise_std": 0.8,
+        "noise_std_type": "scalar",
+        "state_dependent_std": false,
+        "actor_obs_normalization": true,
+        "critic_obs_normalization": true,
+        "actor_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "critic_hidden_dims": [
+          512,
+          256,
+          128
+        ],
+        "activation": "elu",
+        "rnn_type": "gru",
+        "rnn_hidden_dim": 256,
+        "rnn_num_layers": 1
+      },
+      "policy_dim": 164,
+      "critic_dim": 179,
+      "action_dim": 12,
+      "observations": {
+        "policy": [
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          },
+          {
+            "name": "gait_clock",
+            "dim": 2,
+            "func": "unitree_rl_lab.tasks.locomotion.mdp.observations:gait_phase",
+            "params": {
+              "period": 0.75,
+              "command_name": "base_velocity",
+              "minimum_period": 0.55,
+              "minimum_speed": 0.15,
+              "maximum_speed": 0.5
+            },
+            "clip": null,
+            "scale": null
+          }
+        ],
+        "critic": [
+          {
+            "name": "base_lin_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_lin_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "base_ang_vel",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:base_ang_vel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.2
+          },
+          {
+            "name": "projected_gravity",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:projected_gravity",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "velocity_commands",
+            "dim": 3,
+            "func": "isaaclab.envs.mdp.observations:generated_commands",
+            "params": {
+              "command_name": "base_velocity"
+            },
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_pos_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_pos_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "joint_vel_rel",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_vel_rel",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.05
+          },
+          {
+            "name": "joint_effort",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:joint_effort",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": 0.01
+          },
+          {
+            "name": "last_action",
+            "dim": 12,
+            "func": "isaaclab.envs.mdp.observations:last_action",
+            "params": {},
+            "clip": [
+              -100,
+              100
+            ],
+            "scale": null
+          },
+          {
+            "name": "height_scan",
+            "dim": 117,
+            "func": "isaaclab.envs.mdp.observations:height_scan",
+            "params": {
+              "sensor_cfg": {
+                "name": "height_scanner",
+                "joint_names": null,
+                "joint_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "fixed_tendon_names": null,
+                "fixed_tendon_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "body_names": null,
+                "body_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "object_collection_names": null,
+                "object_collection_ids": [
+                  null,
+                  null,
+                  null
+                ],
+                "preserve_order": false
+              }
+            },
+            "clip": [
+              -1.0,
+              1.0
+            ],
+            "scale": null
+          },
+          {
+            "name": "gait_clock",
+            "dim": 2,
+            "func": "unitree_rl_lab.tasks.locomotion.mdp.observations:gait_phase",
+            "params": {
+              "period": 0.75,
+              "command_name": "base_velocity",
+              "minimum_period": 0.55,
+              "minimum_speed": 0.15,
+              "maximum_speed": 0.5
+            },
+            "clip": null,
+            "scale": null
+          }
+        ]
+      },
+      "control": {
+        "joint_ids_map": [
+          3,
+          0,
+          9,
+          6,
+          4,
+          1,
+          10,
+          7,
+          5,
+          2,
+          11,
+          8
+        ],
+        "step_dt": 0.02,
+        "stiffness": [
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0,
+          25.0
+        ],
+        "damping": [
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "default_joint_pos": [
+          0.1,
+          -0.1,
+          0.1,
+          -0.1,
+          0.8,
+          0.8,
+          1.0,
+          1.0,
+          -1.5,
+          -1.5,
+          -1.5,
+          -1.5
+        ],
+        "actions": {
+          "JointPositionAction": {
+            "clip": [
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ],
+              [
+                -100.0,
+                100.0
+              ]
+            ],
+            "joint_names": [
+              ".*"
+            ],
+            "scale": [
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25,
+              0.25
+            ],
+            "offset": [
+              0.1,
+              -0.1,
+              0.1,
+              -0.1,
+              0.8,
+              0.8,
+              1.0,
+              1.0,
+              -1.5,
+              -1.5,
+              -1.5,
+              -1.5
+            ],
+            "joint_ids": null
+          }
+        }
+      },
+      "command": {
+        "class_type": "unitree_rl_lab.tasks.locomotion.mdp.commands.velocity_command:RelativeHeadingVelocityCommand",
+        "resampling_time_range": [
+          20.0,
+          20.0
+        ],
+        "debug_vis": true,
+        "asset_name": "robot",
+        "heading_command": true,
+        "heading_control_stiffness": 1.0,
+        "rel_standing_envs": 0.0,
+        "rel_heading_envs": 1.0,
+        "ranges": {
+          "lin_vel_x": [
+            0.15,
+            0.5
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.3,
+            0.3
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "goal_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_goal",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  1.0,
+                  0.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "current_vel_visualizer_cfg": {
+          "prim_path": "/Visuals/Command/velocity_current",
+          "markers": {
+            "arrow": {
+              "func": "isaaclab.sim.spawners.from_files.from_files:spawn_from_usd",
+              "visible": true,
+              "semantic_tags": null,
+              "copy_from_source": true,
+              "mass_props": null,
+              "deformable_props": null,
+              "rigid_props": null,
+              "collision_props": null,
+              "activate_contact_sensors": false,
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "articulation_props": null,
+              "fixed_tendons_props": null,
+              "spatial_tendons_props": null,
+              "joint_drive_props": null,
+              "visual_material_path": "material",
+              "visual_material": {
+                "func": "isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface",
+                "diffuse_color": [
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "emissive_color": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "roughness": 0.5,
+                "metallic": 0.0,
+                "opacity": 1.0
+              },
+              "usd_path": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Props/UIElements/arrow_x.usd",
+              "variants": null
+            }
+          }
+        },
+        "limit_ranges": {
+          "lin_vel_x": [
+            0.15,
+            0.5
+          ],
+          "lin_vel_y": [
+            0.0,
+            0.0
+          ],
+          "ang_vel_z": [
+            -0.3,
+            0.3
+          ],
+          "heading": [
+            -3.141592653589793,
+            3.141592653589793
+          ]
+        },
+        "relative_heading_range": [
+          -0.7853981633974483,
+          0.7853981633974483
+        ],
+        "max_yaw_rate": 0.3,
+        "minimum_turn_radius": 0.55,
+        "maximum_lateral_acceleration": 0.45,
+        "minimum_turning_speed": 0.1
+      },
+      "height_scanner": {
+        "offset": {
+          "pos": [
+            0.3,
+            0.0,
+            20.0
+          ],
+          "rot": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "ray_alignment": "yaw",
+        "pattern_cfg": {
+          "func": "isaaclab.sensors.ray_caster.patterns.patterns:grid_pattern",
+          "resolution": 0.1,
+          "size": [
+            1.2,
+            0.8
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "ordering": "xy"
+        },
+        "update_period": 0.02,
+        "mesh_prim_paths": [
+          "/World/ground"
+        ]
+      },
+      "terrain": {
+        "boxes": {
+          "function": "isaaclab.terrains.trimesh.mesh_terrains:random_grid_terrain",
+          "proportion": 1.0,
+          "size": [
+            8.0,
+            8.0
+          ],
+          "flat_patch_sampling": null,
+          "grid_width": 0.45,
+          "grid_height_range": [
+            0.02,
+            0.18
+          ],
+          "platform_width": 2.0,
+          "holes": false
+        }
+      },
+      "acceptance_status": "frozen_selection_pending_registry_closed_loop_acceptance"
+    }
+  }
+}

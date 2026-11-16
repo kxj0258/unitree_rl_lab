@@ -1,0 +1,11 @@
+test_checkpoint_or_config_change_is_rejected (__main__.TeacherContractTests.test_checkpoint_or_config_change_is_rejected) ... ok
+test_gait_clock_resets_and_speed_changes_period (__main__.TeacherContractTests.test_gait_clock_resets_and_speed_changes_period) ... ok
+test_mismatched_batches_and_nonfinite_input_are_rejected (__main__.TeacherContractTests.test_mismatched_batches_and_nonfinite_input_are_rejected) ... ok
+test_named_terms_clip_before_scale_and_leave_input_unchanged (__main__.TeacherContractTests.test_named_terms_clip_before_scale_and_leave_input_unchanged) ... ok
+test_registry_rejects_proxy_reuse_and_missing_terrain (__main__.TeacherContractTests.test_registry_rejects_proxy_reuse_and_missing_terrain) ... ok
+test_yaml_python_tags_are_data_only (__main__.TeacherContractTests.test_yaml_python_tags_are_data_only) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.042s
+
+OK
